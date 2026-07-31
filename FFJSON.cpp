@@ -3252,7 +3252,7 @@ FFJSON::operator double () {
 
 FFJSON::operator float () {
 	return (float) isLink() ?
-		val.fptr->val.number : val.number;
+		val.fptr->val.number : (isType(STRING)? atof(val.string): val.number);
 }
 
 FFJSON::operator bool () {
