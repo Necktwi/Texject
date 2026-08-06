@@ -609,6 +609,7 @@ public:
 		return *this;
 	}
 	FFJSON& operator = (const char* s);
+	//FFJSON& operator = (char* s);
 	FFJSON& operator = (Blob_ b);
 	FFJSON& operator = (const string& s);
 	FFJSON& operator = (const int& i);

@@ -3320,7 +3320,9 @@ FFJSON& FFJSON::operator = (Blob_ b) {
 	}
 	return *this;
 }
-
+// FFJSON& FFJSON::operator = (char* s) {
+// 	return (*this)= (ccp)s;
+// }
 FFJSON& FFJSON::operator = (const char* s) {
 	if (isQType(UPDATE)) {
 		FeaturedMember fm= getFeaturedMember(FM_UPDATE_TIMESTAMP);
@@ -3478,6 +3480,8 @@ FFJSON& FFJSON::operator = (const FFJSON& f) {
 // need to implement, segfaults during stringify but
 // can be used to hold pointers
 FFJSON& FFJSON::operator= (FFJSON* f) {
+	if (this==f)
+		return *this;
 	if (isQType(UPDATE)) {
 		FeaturedMember fm= getFeaturedMember(FM_UPDATE_TIMESTAMP);
 		fm.m_pTimeStamp->update();
