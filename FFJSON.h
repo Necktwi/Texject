@@ -623,6 +623,7 @@ public:
 	FFJSON& operator = (FFJSON* f);
 
 	FFJSON& operator * ();
+	FFJSON* operator -> ();
 	
 	template<typename T>
 	operator T& () {
