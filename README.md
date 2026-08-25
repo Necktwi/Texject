@@ -1,26 +1,27 @@
-# FFJSON
-Serve the JSON with subscript operator in C++
+# Texject
+Fast C++ JSON parser; serves more than the JSON with subscript operator in
+C++. Texject mean text object. These
+are stored in files with extension `.txj`, `.obj.txj`, `.arr.txj`, `.set.txj`,
+`.num.txj`, `.str.txj` etc.
 
 I doubt a parser could be any faster!
 
-This parser provides ability to access nested name-value pairs in a JSON string using squence of '[]' operators in a C++ program.
-
-Its a valgrind clean library. One don't have to worry about freeing up parser.
+Its a valgrind clean library. No need to worry about freeing up parser.
 
 I recursively hacked it to extract as many features as I could and I will continue till it can!
 
 ## code at a glance:
-### Employee.json
+### Employee.txj
 ```JSON
 {
-   "name": "Gowtham",
+   name: "Gowtham",
    "id": 1729,
-   "isProgrammer": true,
-   "favLanguages": {"C++", "Javascript", "lisp"},
-   "langScores":   [9,      9,         , 8] | {favLanguages},
+   isProgrammer: true,
+   favLanguages: {"C++", "Javascript", "lisp"},
+   langScores:   [9,      9,         , 8] | {favLanguages},
    "address": {
       "town": "KAKINADA",
-      "country": "Bhaarath"
+      country: "Bharath"
    }
 }
 ```
@@ -29,7 +30,7 @@ I recursively hacked it to extract as many features as I could and I will contin
 ```CPP
 #include <base/FFJSON.h>
 
-FFJSON obj("file://Employee.json");
+Txj obj("file://Employee.txj");
 
 cout << obj["name"] << endl;
 cout << (int)obj["id"] << endl;
