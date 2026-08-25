@@ -54,8 +54,8 @@ C++ score: 9
 
 ## Installation
 ```
-git clone https://github.com/necktwi/FFJSON.git
-cd FFJSON
+git clone https://github.com/necktwi/Texject.git
+cd Texject
 mkdir build/Linux/x86_64/debug
 cmake -G "Unix Makefiles" -D_DEBUG=1 -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DBUILD_TESTING=1 ../../../../
 make -j`nproc`
@@ -63,7 +63,7 @@ sudo make install
 ```
 
 ## Linker option
-`-lFFJSON`
+`-ltxj`
 
-- It got lot many cool features; look https://github.com/necktwi/FFJSON/blob/master/nbproject/tests/ffjsonTest.cpp
+- It got lot many cool features; look https://github.com/necktwi/Texject/blob/master/nbproject/tests/ffjsonTest.cpp
 - FFJSON acronym is "FerryFairJSON"

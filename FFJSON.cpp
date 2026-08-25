@@ -51,6 +51,8 @@ const char Txj::OBJ_STR[15][15] = {
 	"NUL"
 };
 map<Txj*, set<Txj::TxjIterator> > Txj::sm_mUpdateObjs;
+map<Txj*, shared_mutex> Txj::MtxMap;
+shared_mutex Txj::MtxMapMtx;
 
 Txj::Txj () {
 	//	  type = UNDEFINED;
@@ -3506,46 +3508,46 @@ void Txj::lock () {
 	MtxMapMtx.unlock_shared();
 	if (it==MtxMap.end()) {
 		MtxMapMtx.lock();
-		mutex& mtx= MtxMap[this];
+		shared_mutex& mtx= MtxMap[this];
 		MtxMapMtx.unlock();
 		mtx.lock();
 	} else {
-		it->lock();
+		it->second.lock();
 	}
 }
 
 void Txj::unlock () {
 	MtxMapMtx.lock_shared();
-	mutex& mtx= MtxMap[this];
+	shared_mutex& mtx= MtxMap[this];
 	MtxMapMtx.unlock_shared();
 	mtx.unlock();
 }
 void Txj::lockShared () {
 	MtxMapMtx.lock_shared();
-	map<Txj*, mutex>::iterator it= MtxMap.find(this);
+	map<Txj*, shared_mutex>::iterator it= MtxMap.find(this);
 	MtxMapMtx.unlock_shared();
 	if (it==MtxMap.end())
 		return;
-	mutex& mtx= it->second;
+	shared_mutex& mtx= it->second;
 	mtx.lock_shared();
 }
 void Txj::unlockShared () {
 	MtxMapMtx.lock_shared();
-	map<Txj*, mutex>::iterator it= MtxMap.find(this);
+	map<Txj*, shared_mutex>::iterator it= MtxMap.find(this);
 	MtxMapMtx.unlock_shared();
 	if (it==MtxMap.end())
 		return;
-	mutex& mtx= it->second;
+	shared_mutex& mtx= it->second;
 	mtx.unlock_shared();
 }
 
 void Txj::prune () {
 	MtxMapMtx.lock_shared();
-	size_t mpsize= MtxMapMtx.size();
+	size_t mpsize= MtxMap.size();
 	MtxMapMtx.unlock_shared();
 	if (mpsize>50) {
 		MtxMapMtx.lock();
-		MtxMapMtx.clear();
+		MtxMap.clear();
 		MtxMapMtx.unlock();
 	}
 }
