@@ -37,7 +37,11 @@ using namespace std;
 int child_exit_status = 0;
 FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO);
 unsigned int fflAllowedBlks = 9;
+FerryTimeStamp ftsStart;
+FerryTimeStamp ftsEnd;
+FerryTimeStamp ftsDiff;
 
+double vm, rss, initrss= 0;
 void mem_usage(double& vm_usage, double& resident_set) {
    vm_usage = 0.0;
    resident_set = 0.0;
@@ -57,9 +61,15 @@ void mem_usage(double& vm_usage, double& resident_set) {
    >> O >> itrealvalue >> starttime >> vsize >> rss; 
    stat_stream.close();
    // for x86-64 is configured to use 2MB pages
-   long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; 
+   long page_size_kib = sysconf(_SC_PAGE_SIZE) / 1024; 
    vm_usage = vsize / 1024.0;
-   resident_set = rss * page_size_kb;
+   resident_set = rss * page_size_kib;
+}
+
+void printMemUsage () {
+   mem_usage(vm, rss);
+   cout<< "Virtual Memory: "<< vm<< "KiB"<< endl;
+	cout<< "Augmented resident set size: "<< rss-initrss<< "KiB"<< endl;
 }
 
 struct Test_ {
@@ -95,8 +105,8 @@ void test1 () {
    ffl_info(1, "\\r=%d", (int) c);
    ffl_info(1, "The current working directory is %s", cCurrentPath);
    fflush(stdout);
-   string fn = "sample.ffjson";
-   //string fn = "/home/gowtham/Projects/ferrymediaserver/output.ffjson";
+   string fn = "sample.txj";
+   //string fn = "/home/gowtham/Projects/ferrymediaserver/output.txj";
    ifstream ifs(fn.c_str(), ios::in | ios::ate);
    string ffjsonStr;
    ifs.seekg(0, ios::end);
@@ -230,7 +240,7 @@ void test3 () {
    cout << "        TestTxj test 3 (comparing strings)      " << endl;
    cout << "===================================================" << endl;
    
-   Txj sample("file://sample.ffjson");
+   Txj sample("file://sample.txj");
    if ((int) sample["donkeys"] < 4) {
       cout << "alert: my donkey is missing" << endl;
    }
@@ -244,7 +254,7 @@ void test4 () {
    cout << "===================================================" << endl;
    cout << "			TestTxj test 4 (testing links)		   " << endl;
    cout << "===================================================" << endl;
-   Txj f("file://linksSample.ffjson");
+   Txj f("file://linksSample.txj");
    map<string,Txj*>* emln = f["obj1"].val.pairs;
    typedef const char* ccp;
    if (emln->find(string("127.0.0.2"))!=emln->end()) {
@@ -267,7 +277,7 @@ void test5 () {
    cout << "===================================================" << endl;
    cout << "		TestTxj test 5 (testing extensions)		   " << endl;
    cout << "===================================================" << endl;
-   Txj f("file://ExtensionTest.ffjson");
+   Txj f("file://ExtensionTest.txj");
    cout << f.prettyString() << endl;
    
    cout << "Marks[0]['Maths']: " << f["Marks"][0]["Maths"].prettyString()
@@ -316,7 +326,7 @@ void test7 () {
    cout << "===================================================" << endl;
    cout << "	TestTxj test 7 (testing MultiLineArray)		" << endl;
    cout << "===================================================" << endl;
-   Txj f("file://MultiLineArray.ffjson");
+   Txj f("file://MultiLineArray.txj");
    string sF = f.prettyString();
    cout << sF << endl;
    Txj f2(sF);
@@ -335,22 +345,30 @@ void test7 () {
 
 void test8 () {
    cout << "===================================================" << endl;
-   cout << "           TestTxj test 8 sample.ffjson         " << endl;
+   cout << "           TestTxj test 8 sample.txj               " << endl;
    cout << "===================================================" << endl;
-   Txj f("file://example.json");
-   cout << f.prettyString() << endl;
-   Txj f2(f.prettyString());
-   string sF2 = f2.stringify();
-   cout << f2 << endl;
-   Txj f3(sF2);
-   string sF3 = f3.prettyString();
-   cout << sF3 << endl;
-   
+   //Txj f("file://example.json");
+   //Txj f("file://Employee.oob.txj");
+   //Txj f("file://red/users2.obj.txj");
+   Txj f("{\"Rs\":{\"20\":[2]}}");
+	int i= f["Rs"]["20"][0];
+   //Txj f("[\n]");
+   cout<< f.prettyString()<< endl;
+   cout<< f.stringify()<< endl;
+   // Txj f2(f.prettyString());
+   // cout<< f2<< endl;
+   // string sF2= f2.stringify();
+   // cout<< sF2<< endl;
+   // Txj f3(sF2);
+   // string sF3= f3.prettyString();
+   // cout<< sF3<< endl;
+	//f["necktwi"]["things"][0]["id"]= 1728;
+	//f.save();
 }
 
 void test9 () {
    cout << "===================================================" << endl;
-   cout << "						erase test					" << endl;
+   cout << "                     erase test                    " << endl;
    cout << "===================================================" << endl;
    Txj f("{}");
    f["cameras"].erase(string("cam"));
@@ -383,7 +401,7 @@ void test10 () {
 
 void test11 () {
    cout << "===================================================" << endl;
-   cout << "		subscript operator exection flow			" << endl;
+   cout << "      subscript operator exection flow	            " << endl;
    cout << "===================================================" << endl;
    Txj f("{}");
    f["a"]["b"] = 2;
@@ -396,7 +414,7 @@ void test11 () {
 
 void test12 () {
    cout << "===================================================" << endl;
-   cout << "					update query					" << endl;
+   cout << "               update query                        " << endl;
    cout << "===================================================" << endl;
    Txj f("{necktwi:{things:[{id:0}]}}");
    int j = 10;
@@ -424,7 +442,7 @@ void test13 () {
    cout << "===================================================" << endl;
    Txj fa(Txj::ARRAY);
    fa[0]=1;
-   Txj f("file://saveFileSample.ffjson|OBJECT");
+   Txj f("file://saveFileSample.txj|OBJECT");
    f["test"]="OK";
    //f["obj4"]["nestedFile"]["test"]="OK";
    Txj pvh;
@@ -434,7 +452,7 @@ void test13 () {
    f["txoTest"].clearEFlag(Txj::FILE);
    cout << f << endl;
    f.save();
-   // Txj ff("file://saveFileSample.ffjson");
+   // Txj ff("file://saveFileSample.txj");
    // Txj& ln = ff["vh"]["obj5"]["things"][].
    //    addLink(ff["vh"]["obj5"], "users.gowtham.things.0");
    // if (!ln)
@@ -447,12 +465,12 @@ void test14 () {
    cout << "===================================================" << endl;
    cout << "                       leak test					      " << endl;
    cout << "===================================================" << endl;
-   Txj f("file:///home/Necktwi/workspace/ferryfair/config.ffjson");
+   Txj f("file:///home/Necktwi/workspace/ferryfair/config.txj");
    cout << f << endl;
 }
 
 void test15 () {
-   Txj f("file:///home/Necktwi/workspace/ferryfair/config.ffjson");
+   Txj f("file:///home/Necktwi/workspace/ferryfair/config.txj");
    cout << f << endl;
 }
 
@@ -558,13 +576,270 @@ void test23 () {
 	cout << fun << endl;
 }
 
+int test24 () {
+	cout << "## 1. int copy test" << endl;
+	int i= 1;
+	string istr= to_string(i);
+	ccp cstr= istr.c_str();
+   ftsStart.update();
+	Txj t(cstr);
+	Txj t2(t);
+	Txj t3;
+	t3= t2;
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< t<< endl;
+   cout<< t2<< endl;
+   cout<< "i: "<< i<< endl;
+   cout<< "t3: "<< t3<< endl;
+	printMemUsage();
+	cout<< "Testing: t3==i"<< endl;
+	if ((int)t3==i) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test25 () {
+	cout << "## 2. string copy test" << endl;
+	ccp tstr= "somestring";
+	string str("\"");
+	str+= tstr; str+= "\"";
+	ccp cstr= str.c_str();
+   ftsStart.update();
+	Txj t(cstr);
+	Txj t2(t);
+	Txj t3;
+	t3= t2;
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< t<< endl;
+   cout<< t2<< endl;
+   cout<< "tstr: "<< tstr<< endl;
+   cout<< "(ccp)t3: "<< (ccp)t3<< endl;
+	printMemUsage();
+	cout<< "Testing: (ccp)t3==tstr"<< endl;
+	if (!strcmp((ccp)t3, tstr)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test26 () {
+	cout << "## 3. obj stringify test" << endl;
+	ccp istr= "{i:1,s:\"somestring\"}";
+	ccp jstr= "{\"i\":1,\"s\":\"somestring\"}";
+	ftsStart.update();
+	Txj t(istr);
+   Txj tj(jstr);
+	string ostr= t.stringify();
+	string ojstr= tj.stringify(true);
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "istr: "<< istr<< endl;
+	cout<< "jstr: "<< jstr<< endl;
+	cout<< "ostr: "<< ostr<< endl;
+	cout<< "ojstr: "<< ojstr<< endl;
+	printMemUsage();
+	cout<< "Testing: ostr==istr && ojstr==jstr"<< endl;
+	if (!strcmp(ostr.c_str(), istr) && !strcmp(ojstr.c_str(), jstr)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test27 () {
+	cout << "## 4. obj copy test" << endl;
+	ccp istr= "{i:1,s:\"somestring\"}";
+	ftsStart.update();
+	Txj t(istr);
+	Txj t2(t);
+	Txj t3;
+	t3= t2;
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "istr: "<< istr<< endl;
+	cout<< t<< endl;
+   cout<< t2<< endl;
+	string ostr= t3.stringify();
+	cout<< "ostr: "<< ostr<< endl;
+	printMemUsage();
+	cout<< "Testing: ostr==istr"<< endl;
+	if (!strcmp(ostr.c_str(), istr)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test28 () {
+	cout << "## 5. array copy test" << endl;
+	ccp istr= "[1,\"somestring\"]";
+	ftsStart.update();
+	Txj t(istr);
+	Txj t2(t);
+	Txj t3;
+	t3= t2;
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "istr: "<< istr<< endl;
+	cout<< t<< endl;
+   cout<< t2<< endl;
+	string ostr= t3.stringify();
+	cout<< "ostr: "<< ostr<< endl;
+	printMemUsage();
+	cout<< "Testing: ostr==istr"<< endl;
+	if (!strcmp(ostr.c_str(), istr)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test29 () {
+	cout << "## 6. url string test" << endl;
+	ccp istr= "file://tests/data/urlstring.obj.txj";
+	ftsStart.update();
+	Txj t(istr);
+	ifstream ifs("tests/data/urlstring.obj.txj", ios::in);
+	string fStr("{");
+	if (ifs.is_open()) {
+		fStr.append((istreambuf_iterator<char>(ifs)),
+						  istreambuf_iterator<char>());
+		ifs.close();
+	}
+	fStr+="}";
+	string ostr= t.stringify();
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "fstr: "<< fStr<< endl;
+	cout<< "ostr: "<< ostr<< endl;
+	printMemUsage();
+	cout<< "Testing: ostr==fStr"<< endl;
+	if (ostr==fStr) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test30 () {
+	cout << "## 7. parse example.json test" << endl;
+	ccp istr= "file://tests/data/example.json";
+	ftsStart.update();
+	Txj t(istr);
+	string ostr= t.stringify();
+	bool areContractors= t["areContractors"];
+	ccp firstEmployeeFirstName= t["employees"][0]["firstName"];
+   ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "areContractors: "<< areContractors<< endl;
+	cout<< "firsEmployeeFirstName: "<< firstEmployeeFirstName<< endl;
+	cout<< "ostr: "<< ostr<< endl;
+	printMemUsage();
+	cout<< "Testing: areContractors==true && firstEmployeeFirstName==John"<<
+		endl;
+	if (areContractors && !strcmp(firstEmployeeFirstName, "John")) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test31 () {
+	cout << "## 8. parse nullmember.obj.txj test" << endl;
+	ccp istr= "file://tests/data/nullmember.obj.txj";
+	ftsStart.update();
+	Txj t(istr);
+	string ostr= t.stringify();
+	Txj& rbsid= t["2W2tzZxC0ufJ05Xp"];
+	ccp user= rbsid["user"];
+	Txj& wpSub= rbsid["wpSub"];
+	Txj& keys= wpSub["keys"];
+	ccp endpoint= wpSub["endpoint"];
+	ccp p256dh= keys["p256dh"], authKe= keys["auth"];
+	bool wpSubNull= !wpSub;
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "user: "<< user<< endl;
+	cout<< "ostr: "<< ostr<< endl;
+	printMemUsage();
+	cout<< "Testing: user==gowtham && !wpSub && !endpoint && !p256dh &&"
+		" !authKe"<< endl;
+	if (user && !strcmp(user, "gowtham") && wpSubNull &&
+		 !endpoint && !p256dh && !authKe) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test32 () {
+	cout << "## 9. Entended array and multiline string test" << endl;
+	ccp istr= "file://tests/data/Employee.oob.txj";
+	ccp expectedBio= "He is smart, brilliant, genius, empathetic, creative, connective,\npatient, handsome, valient, romantic ;)";
+	ftsStart.update();
+	Txj t(istr);
+	string ostr= t.stringify();
+	Txj& name= t["name"];
+	int cppScore= t["langScores"]["C++"];
+	int jsScore= t["langScores"]["Javascript"];
+	int lispScore= t["langScores"]["lisp"];
+	ccp biography= t["biography"];
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "name: "<< name<< endl;
+	cout<< "biography: "<< biography<< endl;
+	cout<< "expectedBio: "<< expectedBio<< endl;
+	cout<< "cppScore: "<< cppScore<< endl;
+	cout<< "jsScore: "<< jsScore<< endl;
+	cout<< "lispScore: "<< lispScore<< endl;
+	cout<< "ostr: "<< ostr<< endl;
+	printMemUsage();
+	cout<< "Testing: name==Gowtham && lispSocre==8 && "
+		"biography==expectedBio"<< endl;
+	if (name && !strcmp(name, "Gowtham") && lispScore==7 &&
+		 !strcmp(biography, expectedBio)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
 int main (int argc, char** argv) {
-   cout << "%SUITE_STARTING% TestTxj" << endl;
-   cout << "%SUITE_STARTED%" << endl;
+   cout<< "%SUITE_STARTING% TestTxj"<< endl;
+   cout<< "%SUITE_STARTED%"<< endl<< endl;
    
-   FerryTimeStamp ftsStart;
-   FerryTimeStamp ftsEnd;
-   FerryTimeStamp ftsDiff;
    FerryTimeStamp ftsSuiteStart;
    FerryTimeStamp ftsSuiteEnd;
    ftsSuiteStart.update();
@@ -612,21 +887,21 @@ int main (int argc, char** argv) {
    ftsEnd.update();
    ftsDiff = ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test6 " << endl;
-   
+
    cout << "%TEST_STARTED% test7 (TestTxj)\n" << endl;
    ftsStart.update();
    test7();
    ftsEnd.update();
    ftsDiff = ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test7 " << endl;
-   
+
    cout << "%TEST_STARTED% test8 (TestTxj)\n" << endl;
    ftsStart.update();
    test8();
    ftsEnd.update();
-   ftsDiff = ftsEnd-ftsStart;
+   ftsDiff= ftsEnd-ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test8 " << endl;
-   
+
    cout << "%TEST_STARTED% test9\n" << endl;
    ftsStart.update();
    test9();
@@ -717,17 +992,32 @@ int main (int argc, char** argv) {
    ftsEnd.update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test22" << endl;
-*/
+
    cout << "%TEST_STARTED% test23" << endl;
    ftsStart.update();
    test23();
    ftsEnd.update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test23" << endl;
+*/
+	int pc= 0, tc=0;
+	printMemUsage();
+	mem_usage(vm, initrss);
+
+	++tc; pc+= test24();
+	++tc; pc+= test25();
+	++tc; pc+= test26();
+	++tc; pc+= test27();
+	++tc; pc+= test28();
+	++tc; pc+= test29();
+	++tc; pc+= test30();
+	++tc; pc+= test31();
+	++tc; pc+= test32();
 
 	ftsSuiteEnd.update();
-   ftsDiff = ftsSuiteEnd-ftsSuiteStart;
-   cout << "%SUITE_FINISHED% time=" << ftsDiff << endl;
+   ftsDiff= ftsSuiteEnd-ftsSuiteStart;
+   cout<< "%SUITE_FINISHED% time="<< ftsDiff<< "sec"<< endl;
+	cout<< "TotalPassed: "<< pc<< "/"<< tc<< endl;
 
    return (EXIT_SUCCESS);
 }

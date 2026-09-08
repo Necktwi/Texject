@@ -28,8 +28,8 @@ typedef unsigned int uint;
 
 using namespace std;
 
-enum _ffj_log_level {
-	FFJ_MAIN = 1 << 0
+enum txj_log_level_ {
+	TXJ_MAIN= 1 << 0
 };
 class Txj;
 struct FFPtrCmp {
@@ -54,8 +54,8 @@ public:
 		SET_TYPE,
 		NEW_SET_MEMBER,
 		ARRAY,
-		OBJECT,
-		BIG_OBJECT,
+		OBJ,
+		ORDERED_OBJ,
 		LINK,
 		DLINK, //Direct link
 		VPTR,
@@ -66,57 +66,54 @@ public:
 		/**
 		 * To clear query type
 		 */
-		NONE		= 0 << 8,
-		QUERY		= 1 << 8,
-		SET		= 2 << 8,
-		DEL		= 3 << 8,
-		UPDATE	= 4 << 8,
-		NQUERY	= 5 << 8,
+		NONE     = 0 << 8,
+      QUERY    = 1 << 8,
+      SET      = 2 << 8,
+      DEL      = 3 << 8,
+      UPDATE   = 4 << 8,
+      NQUERY   = 5 << 8,
 	};
 	
 	enum E_FLAGS : uint32_t {
 		ENONE						= 0,
 
-		B64ENCODE				= 1 << 16, //ObjectsNArrayNStr
-		B64ENCODE_CHILDREN	= 1 << 17,
-		B64ENCODE_STOP			= 1 << 18,
+		B64ENCODE				= 1<<16, //ObjectsNArrayNStr
+		B64ENCODE_CHILDREN	= 1<<17,
+		B64ENCODE_STOP			= 1<<18,
 
-		COMMENT					= 1 << 19, //any
-		HAS_COMMENT				= 1 << 20,
+		EXTENDED					= 1<<19, //ARRAY N OBJ //FM
+		LONG_LAST_LN			= 1<<19, //STRING//linkResolvSerial //NO_FM
 		
-		EXTENDED					= 1 << 21, //ARRAY N OBJECT //FM
-		LONG_LAST_LN			= 1 << 21, //STRING//linkResolvSerial //NO_FM
+		PRECISION				= 1<<20, //NUMBER //FM
+		EXT_VIA_PARENT			= 1<<20, //ARRAY N OBJ //FM
+		ONE_SHORT_LAST_LN		= 1<<20, //STRING //NO_FM
 		
-		PRECISION				= 1 << 22, //NUMBER //FM
-		EXT_VIA_PARENT			= 1 << 22, //ARRAY N OBJECT //FM
-		ONE_SHORT_LAST_LN		= 1 << 22, //STRING //NO_FM
+		HAS_CHILDREN			= 1<<21, //ARRAY N OBJ //FM
+		STRING_INIT				= 1<<21, //STRING //FM
 		
-		HAS_CHILDREN			= 1 << 23, //ARRAY N OBJECT //FM
-		STRING_INIT				= 1 << 23, //STRING //FM
-		
-		FILE						= 1 << 24, //FILE //FM Any
-		CASTFILE					= 1 << 25
+		FILE						= 1<<22, //FILE //FM Any
+		CASTFILE					= 1<<23
 	};
 	
 	enum COPY_FLAGS : uint32_t {
-		COPY_NONE		= 0,
-		COPY_QUERIES	= 1 << 0,
-		COPY_EFLAGS		= 1 << 1,
-		COPY_SHALLOW	= 1 << 2,
-		COPY_ALL			= 0xffffffff
+		COPY_NONE      = 0,
+      COPY_QUERIES   = 1<<0,
+      COPY_EFLAGS    = 1<<1,
+      COPY_SHALLOW   = 1<<2,
+      COPY_ALL       = 1 | 1<<1
 	};
 	
 	enum FeaturedMemType : uint32_t {
-		FM_TABHEAD				= 1,
-		FM_PRECISION			= 1,
-		FM_WIDTH					= 1,
-		FM_LINK					= 2,
-		FM_PARENT				= 3,
-		FM_CHILDREN				= 4,
-		FM_MAP_SEQUENCE		= 5,
-		FM_MULTI_LN				= 6,
-		FM_UPDATE_TIMESTAMP	= 7,
-		FM_FILE					= 8
+		FM_TABHEAD           = 1,
+      FM_PRECISION         = 1,
+      FM_WIDTH             = 1,
+      FM_LINK              = 2,
+      FM_PARENT            = 3,
+      FM_CHILDREN          = 4,
+      FM_MAP_SEQUENCE      = 5,
+      FM_MULTI_LN          = 6,
+      FM_UPDATE_TIMESTAMP  = 7,
+      FM_FILE              = 8
 	};
 	
 	class Exception : exception {
@@ -136,30 +133,28 @@ public:
 	public:
 		Iterator ();
 		Iterator (const Iterator& orig);
-		Iterator (const Txj& orig, bool end = false);
+		Iterator (const Txj& orig, bool end= false);
 		Iterator (map<string, Txj*>::iterator pi);
 		Iterator (vector<Txj*>::iterator ai);
-		Iterator (
-			vector<ffmap::iterator>::iterator pai,
-			vector<ffmap::iterator>* pMapItVec
-		);
-		virtual		~Iterator ();
-		void			init (const Txj& orig, bool end = false);
-		Iterator&	operator ++ ();
-		Iterator		operator ++ (int);
-		Iterator&	operator -- ();
-		Iterator		operator -- (int);
-		Iterator&	operator = (const Iterator& i);
-		Iterator&	operator + (int i);
-		bool			operator == (const Iterator& i);
-		bool			operator != (const Iterator& i);
-		Txj*		operator -> ();
-		Txj&		operator * ();
-		operator		const char* ();
+		Iterator (vector<ffmap::iterator>::iterator pai,
+		          vector<ffmap::iterator>* pMapItVec);
+		virtual     ~Iterator ();
+      void        init (const Txj& orig, bool end= false);
+      Iterator&   operator ++ ();
+      Iterator    operator ++ (int);
+      Iterator&   operator -- ();
+      Iterator    operator -- (int);
+      Iterator&   operator = (const Iterator& i);
+      Iterator&   operator + (int i);
+      bool        operator == (const Iterator& i);
+      bool        operator != (const Iterator& i);
+      Txj*        operator -> ();
+      Txj&        operator * ();
+      operator    const char* ();
 		
 		/**
-		 * Should be only used on OBJECT type iterators
-		 * @return name in the name-value pair of the iterator of the OBJECT
+		 * Should be only used on OBJ type iterators
+		 * @return name in the name-value pair of the iterator of the OBJ
 		 */
 		string getIndex ();
 		/**
@@ -170,14 +165,14 @@ public:
 		int getIndex (const Txj& rCurrArray);
 		
 	private:
-		uint8_t	type;
-		void		copy (const Iterator& i);
+		uint8_t  type;
+      void     copy (const Iterator& i);
 		
 		union IteratorUnion {
-			map<string, Txj*>::iterator							pi;
-			vector<Txj*>::iterator									ai;
-			ffset::iterator												si;
-			vector<map<string, Txj*>::iterator >::iterator	pai;
+			ffmap::iterator                    pi;
+         vector<Txj*>::iterator             ai;
+         ffset::iterator                    si;
+         vector<ffmap::iterator>::iterator pai;
 			
 			IteratorUnion () {
 				memset(this, 0, sizeof (IteratorUnion));
@@ -191,19 +186,18 @@ public:
 			~IteratorUnion ()
 			{}
 			IteratorUnion (
-				const vector<map<string, Txj*>::iterator >::iterator&
-				itMapVector
+				const vector<map<string, Txj*>::iterator>::iterator& itMapVector
 			) {
-				pai = itMapVector;
+				pai= itMapVector;
 			}
 			IteratorUnion (const vector<Txj*>::iterator& itVec) {
-				ai = itVec;
+				ai= itVec;
 			}
 			IteratorUnion (const map<string, Txj*>::iterator& itMap) {
-				pi = itMap;
+				pi= itMap;
 			}
 			IteratorUnion (const ffset::iterator& itSet) {
-				si = itSet;
+				si= itSet;
 			}
 			IteratorUnion& operator = (const IteratorUnion& rFIt) {
 				memcpy(this, &rFIt, sizeof (IteratorUnion));
@@ -213,18 +207,18 @@ public:
 				memcpy(this, &rFIt, sizeof (IteratorUnion));
 				return *this;
 			}
-			friend bool operator < (
-				const IteratorUnion& lhs,
-				const IteratorUnion& rhs
-			) {
-				return true;
-			}
+			// friend bool operator < (
+			// 	const IteratorUnion& lhs,
+			// 	const IteratorUnion& rhs
+			// ) {
+			// 	return true;
+			// }
 		} ui;
 		union ContainerPs {
-			ffmap*							m_pMap;
-			ffvec*							m_pVector;
-			vector<ffmap::iterator>*	m_pMapVector;
-			ffset*							m_pSet;
+			ffmap*                     m_pMap;
+         ffvec*                     m_pVector;
+         vector<ffmap::iterator>*     m_pMapVector;
+         ffset*                     m_pSet;
 		} m_uContainerPs;
 	};
 	
@@ -241,7 +235,7 @@ public:
 		/**
 		 * used to store the number precision
 		 */
-		unsigned int precision = 0;
+		unsigned int precision= 0;
 		/**
 		 * used to store the width of the string
 		 */
@@ -266,7 +260,7 @@ public:
 		/**
 		 * Its a vector of names in a map for the order
 		 */
-		vector<map<string, Txj*>::iterator>* m_pvpsMapSequence;
+		vector<ffmap::iterator>* m_pvpsMapSequence;
 		/**
 		 * file name
 		 */
@@ -280,61 +274,43 @@ public:
 	
 	struct FeaturedMemHook {
 		FeaturedMemHook() {
-			m_uFM.m_pFMH = NULL;
-			m_pFMH.m_pFMH = NULL;
+			m_uFM.m_pFMH= NULL;
+			m_pFMH.m_pFMH= NULL;
 		}
 		FeaturedMember m_uFM;
 		FeaturedMember m_pFMH;
 	};
 	
 	struct TxjExt {
-		Txj* base = NULL;
+		Txj* base= NULL;
 	};
 	struct SymlinkTrail {
-		Link* l = nullptr;
-		Txj* ln = nullptr;
+		Link* l= nullptr;
+		Txj* ln= nullptr;
 	};
 	struct TxjPObj {
-		const string* name = NULL;
-		Txj* value = NULL;
-		TxjPObj* pObj = NULL;
-		vector<map<string, Txj*>::iterator>* m_pvpsMapSequence;
+		const string* name= nullptr;
+		Txj* value= NULL;
+		TxjPObj* pObj= NULL;
+		vector<ffmap::iterator>* m_pvpsMapSequence= nullptr;
 		vector<SymlinkTrail> symTrVec;
 	};
 	
-	struct TxjPrettyPrintPObj : TxjPObj {
-		TxjPrettyPrintPObj (
-			map<const string*, const string*>* m_mpDeps,
-			list<string>* m_lsFFPairLst,
-			map<string*, const string*>* m_mpMemKeyFFPairMap,
-			map<const string*, list<string>::iterator>*
-			pKeyPrettyStringMap
-		);
-		bool m_bHeaded = false;
-		
-		/**
-		 * to get the parent of object
-		 */
-		map<const string*, const string*>*	m_mpDeps					= NULL;
-		list<string>*								m_lsFFPairLst			= NULL;
-		map<string*, const string*>*			m_mpMemKeyFFPairMap	= NULL;
-		map<const string*, list<string>::iterator>*
-		m_pKeyPrettyStringItMap = NULL;
-		
+	struct TxjPrettyPrintPObj : public TxjPObj {
+		bool m_bHeaded= false;
 		/**
 		 * Holds column widths for tabular members
 		 */
-		map<string, vector<int> >* m_msviClWidths = NULL;
+		map<string, vector<int> >* m_msviClWidths= NULL;
 		/**
 		 * If this flag is set returns 1st line of string
 		 */
-		bool m_bGiveFirstLine = false;
-		
+		bool m_bGiveFirstLine= false;
 	};
 	
 	union TxjIterator {
-		map<string, Txj*>::iterator	m_itMap;
-		unsigned int							m_uiIndex;
+		map<string, Txj*>::iterator m_itMap;
+		uint m_uiIndex;
 		
 		TxjIterator () {
 			memset(this, 0, sizeof (TxjIterator));
@@ -348,10 +324,10 @@ public:
 		~TxjIterator ()
 		{}
 		TxjIterator (const map<string, Txj*>::iterator& itMap) {
-			m_itMap = itMap;
+			m_itMap= itMap;
 		}
 		TxjIterator (const unsigned int uiIndex) {
-			m_uiIndex = uiIndex;
+			m_uiIndex= uiIndex;
 		}
 		TxjIterator& operator = (const TxjIterator& rFIt) {
 			memcpy(this, &rFIt, sizeof (TxjIterator));
@@ -372,21 +348,21 @@ public:
 	};
 	
 	struct LinkNRef {
-		Txj*	m_pRef = 0;
-		string	m_sLink;
+		Txj* m_pRef= 0;
+		string m_sLink;
 	};
 
 	union FFValue {
-		char*								string;
-		vector<Txj*>*				array;
-		map<std::string, Txj*>* pairs;
-		set<Txj*, FFPtrCmp>*		setPtr;
-		double							number;
-		bool								boolean;
-		Txj*							fptr;
-		uint8_t*							vptr;
-		FerryTimeStamp*				m_pFerryTimeStamp;
-		FFValue() : string {NULL}
+		char* str;
+		vector<Txj*>* array;
+		map<string, Txj*>* pairs;
+		set<Txj*, FFPtrCmp>* setPtr;
+		double number;
+		bool boolean;
+		Txj* fptr;
+		uint8_t*	vptr;
+		FerryTimeStamp* m_pFerryTimeStamp;
+		FFValue() : str {nullptr}
 		{}
 	} val;
 
@@ -395,7 +371,7 @@ public:
 	 * string length. Do not change it!! Its made public only for reading
 	 * convenience.
 	 */
-	unsigned int size = 0;
+	unsigned int size= 0;
 	
 	/**
 	 * creates an UNRECOGNIZED Txj object. Any Txj object can be
@@ -408,8 +384,8 @@ public:
 	 * @param orig is the object one wants to create a copy
 	 */
 	Txj (
-		const Txj& orig, COPY_FLAGS cf = COPY_ALL,
-		TxjPObj* pObj = NULL
+		const Txj& orig, COPY_FLAGS cf= COPY_ALL,
+		TxjPObj* pObj= NULL
 	);
 	
 	/**
@@ -419,12 +395,12 @@ public:
 	 * default.
 	 */
 	Txj (
-		const string& ffjson, int* ci = NULL, int indent = 0,
-		TxjPObj* pObj = NULL
+		const string& ffjson, int* ci= NULL, int indent= 0,
+		TxjPObj* pObj= NULL
 	);
 	void init (
-		const string& ffjson, int* ci = NULL, int indent = 0,
-		TxjPObj* pObj = NULL
+		const string& ffjson, int* ci= NULL, int indent= 0,
+		TxjPObj* pObj= NULL
 	);
 	
 	/**
@@ -441,18 +417,19 @@ public:
 	 */
 	void freeObj(bool bAssignment=false);
 	
-	static const						FeaturedMemType m_FM_LAST = FM_PARENT;
+	static const						FeaturedMemType m_FM_LAST= FM_PARENT;
 	static const char					OBJ_STR[15][15];
-	static inline std::map<std::string, uint8_t> STR_OBJ = {
+	static inline std::map<std::string, uint8_t> STR_OBJ= {
 		{"", UNDEFINED},
 		{"UNDEFINED", UNDEFINED},
-		{"STRING", STRING},
-		{"XML", XML},
-		{"NUMBER", NUMBER},
-		{"BOOL", BOOL},
-		{"OBJECT", OBJECT},
-		{"ARRAY", ARRAY},
-		{"TIME", TIME},
+		{"str", STRING},
+		{"xml", XML},
+		{"num", NUMBER},
+		{"bul", BOOL},
+		{"obj", OBJ},
+		{"oob", ORDERED_OBJ},
+		{"arr", ARRAY},
+		{"tm", TIME},
 		{"NUL", NUL}
 	};
 	static map<Txj*, shared_mutex> MtxMap;
@@ -464,7 +441,7 @@ public:
 	
 	void insertFeaturedMember (FeaturedMember& fms, FeaturedMemType fMT);
 	FeaturedMember getFeaturedMember (FeaturedMemType fMT) const;
-	void destroyAllFeaturedMembers (bool bExemptQueries = false);
+	void destroyAllFeaturedMembers (bool bExemptQueries= false);
 	void nullFeaturedMember (FeaturedMemType fmt);
 	void deleteFeaturedMember (FeaturedMemType fmt);
 	
@@ -537,9 +514,9 @@ public:
 	 * @return A pretty string :)
 	 */
 	string prettyString (
-		bool json = false, bool printComments = false,
-		int indent = 0, TxjPrettyPrintPObj* pObj = NULL,
-		bool printFilePath = false, bool save = false
+		bool json= false, bool printComments= false,
+		int indent= 0, TxjPrettyPrintPObj* pObj= NULL,
+		bool printFilePath= false, bool save= false
 	) const;
 	/**
 	 * Generates a query string which can be used to query a Txj tree. Query
@@ -565,23 +542,22 @@ public:
 	Txj* answerString (Txj& queryObject);
 	
 	Txj* answerObject (
-		Txj* queryObject, TxjPObj* pObj = nullptr,
-		FerryTimeStamp lastUpdateTime = FerryTimeStamp(), Txj* ao = nullptr
+		Txj* queryObject, TxjPObj* pObj= nullptr,
+		FerryTimeStamp lastUpdateTime= FerryTimeStamp(), Txj* ao= nullptr
 	);
 	void erase (string name);
 	void erase (int index);
 	void erase (Txj* value);
 	uint erase (uint start, uint end);
 	int save (
-		bool json = false, bool printComments = true, unsigned int indent=0,
+		bool json= false, bool printComments= true, unsigned int indent=0,
 		TxjPrettyPrintPObj* pObj=NULL, bool printFilePath=true,
 		bool save=true
 	) const;
 	Iterator begin ();
-	Iterator end();
-	Iterator find(const string& key);
-	void headTheHeader(TxjPrettyPrintPObj& lfpo);
-	void SelfTest();
+	Iterator end ();
+	Iterator find (const string& key);
+	void SelfTest ();
 	Txj& addLink (const Txj& obj, string label);
 	Txj& addLink (const string&& objPath, const string&& linkPath);
 	Txj& operator [] (const char* prop);
@@ -592,7 +568,7 @@ public:
 	template <typename T>
 	Txj& operator= (T* t) {
 		freeObj ();
-		val.vptr = (uint8_t*)t;
+		val.vptr= (uint8_t*)t;
 		setType(VPTR);
 		return *this;
 	}
@@ -605,9 +581,9 @@ public:
 	template <typename T>
 	Txj& operator= (const T& t) {
 		freeObj ();
-		ffl_debug (FFJ_MAIN, "size:%d", sizeof(T));
-		size = sizeof (T);
-		val.vptr = (uint8_t*)malloc(size);
+		flDbg(TXJ_MAIN, "size:%d", sizeof(T));
+		size= sizeof (T);
+		val.vptr= (uint8_t*)malloc(size);
 		(T&)(*val.vptr)= t;
 		setType (BINARY);
 		return *this;
@@ -631,12 +607,12 @@ public:
 	
 	template<typename T>
 	operator T& () {
-		ffl_debug (FFJ_MAIN, "size:%d",sizeof(T));
-		if ((isType(BINARY) && size == sizeof(T)) || isType(VPTR)) {
+		flDbg(TXJ_MAIN, "size:%d", sizeof(T));
+		if ((isType(BINARY) && size==sizeof(T)) || isType(VPTR)) {
 			return *reinterpret_cast<T*> (val.vptr);
 		} else {
-			ffl_err (FFJ_MAIN, "Illegal cast! Type miss match");
-			return *reinterpret_cast<T*> (val.vptr);
+			flErr(TXJ_MAIN, "Illegal cast! Type miss match");
+			return *reinterpret_cast<T*>(val.vptr);
 		}
 	}
 	operator const char* ();
@@ -647,12 +623,12 @@ public:
 	operator unsigned int ();
 	operator long ();
 	void copy (
-		const Txj& orig, COPY_FLAGS cf = COPY_NONE,
-		TxjPObj* pObj = NULL
+		const Txj& orig, COPY_FLAGS cf= COPY_NONE,
+		TxjPObj* pObj= NULL
 	);
 private:
-	mutable uint32_t flags = 0;
-	FeaturedMember	  m_uFM;
+	mutable uint32_t flags= 0;
+	FeaturedMember	m_uFM;
 	static int getIndent (const char* ffjson, int* ci, int indent);
 	static void strObjMapInit ();
 	static bool inline isWhiteSpace (char c);
@@ -660,8 +636,7 @@ private:
 	static bool inline isInitializingChar (char c);
 	static std::map<Txj*, set<TxjIterator> > sm_mUpdateObjs;
 	Txj* returnNameIfDeclared (vector<string>& prop,
-											TxjPObj* fpo = nullptr) const;
-	Txj* markTheNameIfExtended (TxjPrettyPrintPObj* fpo);
+										TxjPObj* fpo= nullptr) const;
 	bool inherit (Txj& obj, TxjPObj* pFPObj);
 	void ReadMultiLinesInContainers (
 		const string& ffjson, int& i,
@@ -670,7 +645,7 @@ private:
 	string ConstructMultiLineStringArray (
 		vector<Txj*>& vpfMulLnStrs,
 		int indent, vector<int>& vClWidths) const;
-	LinkNRef GetLinkString(TxjPObj* pObj);
+	LinkNRef GetLinkString (TxjPObj* pObj);
 };
 static Txj nullTxj;
 ostream& operator << (ostream& out, const Txj& f);

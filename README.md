@@ -18,7 +18,7 @@ I recursively hacked it to extract as many features as I could and I will contin
    "id": 1729,
    isProgrammer: true,
    favLanguages: {"C++", "Javascript", "lisp"},
-   langScores:   [9,      9,         , 8] | {favLanguages},
+   langScores:   [9,      9,         , 8     ] | {favLanguages},
    "address": {
       "town": "KAKINADA",
       country: "Bharath"

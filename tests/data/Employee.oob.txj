@@ -1,0 +1,21 @@
+name: "Gowtham",
+"id": 1729,
+isProgrammer: true,
+Favlanguages: [
+	"C++", "Javascript", "lisp"
+],
+langScores: [
+	    9,            8,      7
+] | Favlanguages,
+"address": [
+	"town": "KAKINADA",
+	country: "Bharath"
+],
+"biography": "
+	He is smart, brilliant, genius, empathetic, creative, connective,
+	patient, handsome, valient, romantic ;)
+",
+physiology: {
+	iris: "blue",
+	height: "6 foot"
+}
