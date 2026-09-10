@@ -31,16 +31,16 @@ using namespace std;
 enum txj_log_level_ {
 	TXJ_MAIN= 1 << 0
 };
-class Txj;
+class Txj_;
 struct FFPtrCmp {
-	bool operator() (const Txj* a, const Txj* b) const;
+	bool operator() (const Txj_* a, const Txj_* b) const;
 };
-typedef set<Txj*, FFPtrCmp> ffset;
-typedef map<string, Txj*> ffmap;
-typedef vector<Txj*> ffvec;
+typedef set<Txj_*, FFPtrCmp> ffset;
+typedef map<string, Txj_*> ffmap;
+typedef vector<Txj_*> ffvec;
 typedef const char* ccp;
 
-class DLLExport Txj {
+class DLLExport Txj_ {
 public:
 	
 	enum OBJ_TYPE : uint8_t {
@@ -57,9 +57,9 @@ public:
 		OBJ,
 		ORDERED_OBJ,
 		LINK,
-		DLINK, //Direct link
+		DLINK, // Direct link
 		VPTR,
-		NUL
+		NUL // string parsed returns at least NUL Txj_ if no exception
 	};
 	
 	enum QUERY_TYPE : uint32_t {
@@ -133,13 +133,13 @@ public:
 	public:
 		Iterator ();
 		Iterator (const Iterator& orig);
-		Iterator (const Txj& orig, bool end= false);
-		Iterator (map<string, Txj*>::iterator pi);
-		Iterator (vector<Txj*>::iterator ai);
+		Iterator (const Txj_& orig, bool end= false);
+		Iterator (map<string, Txj_*>::iterator pi);
+		Iterator (vector<Txj_*>::iterator ai);
 		Iterator (vector<ffmap::iterator>::iterator pai,
 		          vector<ffmap::iterator>* pMapItVec);
 		virtual     ~Iterator ();
-      void        init (const Txj& orig, bool end= false);
+      void        init (const Txj_& orig, bool end= false);
       Iterator&   operator ++ ();
       Iterator    operator ++ (int);
       Iterator&   operator -- ();
@@ -148,8 +148,8 @@ public:
       Iterator&   operator + (int i);
       bool        operator == (const Iterator& i);
       bool        operator != (const Iterator& i);
-      Txj*        operator -> ();
-      Txj&        operator * ();
+      Txj_*        operator -> ();
+      Txj_&        operator * ();
       operator    const char* ();
 		
 		/**
@@ -159,10 +159,10 @@ public:
 		string getIndex ();
 		/**
 		 * Should be only use on ARRAY type iterators
-		 * @param rCurrArray should be the Txj Object of the iterator
+		 * @param rCurrArray should be the Txj_ Object of the iterator
 		 * @return index of the iterator of the ARRAY
 		 */
-		int getIndex (const Txj& rCurrArray);
+		int getIndex (const Txj_& rCurrArray);
 		
 	private:
 		uint8_t  type;
@@ -170,7 +170,7 @@ public:
 		
 		union IteratorUnion {
 			ffmap::iterator                    pi;
-         vector<Txj*>::iterator             ai;
+         vector<Txj_*>::iterator             ai;
          ffset::iterator                    si;
          vector<ffmap::iterator>::iterator pai;
 			
@@ -186,14 +186,14 @@ public:
 			~IteratorUnion ()
 			{}
 			IteratorUnion (
-				const vector<map<string, Txj*>::iterator>::iterator& itMapVector
+				const vector<map<string, Txj_*>::iterator>::iterator& itMapVector
 			) {
 				pai= itMapVector;
 			}
-			IteratorUnion (const vector<Txj*>::iterator& itVec) {
+			IteratorUnion (const vector<Txj_*>::iterator& itVec) {
 				ai= itVec;
 			}
-			IteratorUnion (const map<string, Txj*>::iterator& itMap) {
+			IteratorUnion (const map<string, Txj_*>::iterator& itMap) {
 				pi= itMap;
 			}
 			IteratorUnion (const ffset::iterator& itSet) {
@@ -217,7 +217,7 @@ public:
 		union ContainerPs {
 			ffmap*                     m_pMap;
          ffvec*                     m_pVector;
-         vector<ffmap::iterator>*     m_pMapVector;
+         vector<ffmap::iterator>*   m_pMapVector;
          ffset*                     m_pSet;
 		} m_uContainerPs;
 	};
@@ -231,7 +231,7 @@ public:
 	union FeaturedMember {
 		Link* link;
 		map<string, int>* tabHead;
-		Txj* m_pParent;
+		Txj_* m_pParent;
 		/**
 		 * used to store the number precision
 		 */
@@ -256,7 +256,7 @@ public:
 		 * array of links of all children. these links must be deleted up on
 		 * change.
 		 */
-		vector<Txj*>* m_pvChildren;
+		vector<Txj_*>* m_pvChildren;
 		/**
 		 * Its a vector of names in a map for the order
 		 */
@@ -282,15 +282,15 @@ public:
 	};
 	
 	struct TxjExt {
-		Txj* base= NULL;
+		Txj_* base= NULL;
 	};
 	struct SymlinkTrail {
 		Link* l= nullptr;
-		Txj* ln= nullptr;
+		Txj_* ln= nullptr;
 	};
 	struct TxjPObj {
 		const string* name= nullptr;
-		Txj* value= NULL;
+		Txj_* value= NULL;
 		TxjPObj* pObj= NULL;
 		vector<ffmap::iterator>* m_pvpsMapSequence= nullptr;
 		vector<SymlinkTrail> symTrVec;
@@ -309,7 +309,7 @@ public:
 	};
 	
 	union TxjIterator {
-		map<string, Txj*>::iterator m_itMap;
+		map<string, Txj_*>::iterator m_itMap;
 		uint m_uiIndex;
 		
 		TxjIterator () {
@@ -323,7 +323,7 @@ public:
 		}
 		~TxjIterator ()
 		{}
-		TxjIterator (const map<string, Txj*>::iterator& itMap) {
+		TxjIterator (const map<string, Txj_*>::iterator& itMap) {
 			m_itMap= itMap;
 		}
 		TxjIterator (const unsigned int uiIndex) {
@@ -348,18 +348,18 @@ public:
 	};
 	
 	struct LinkNRef {
-		Txj* m_pRef= 0;
+		Txj_* m_pRef= 0;
 		string m_sLink;
 	};
 
 	union FFValue {
 		char* str;
-		vector<Txj*>* array;
-		map<string, Txj*>* pairs;
-		set<Txj*, FFPtrCmp>* setPtr;
+		vector<Txj_*>* array;
+		map<string, Txj_*>* pairs;
+		set<Txj_*, FFPtrCmp>* setPtr;
 		double number;
 		bool boolean;
-		Txj* fptr;
+		Txj_* fptr;
 		uint8_t*	vptr;
 		FerryTimeStamp* m_pFerryTimeStamp;
 		FFValue() : str {nullptr}
@@ -367,34 +367,34 @@ public:
 	} val;
 
 	/**
-	 * It holds the size of the Txj object. array size, object properties,
+	 * It holds the size of the Txj_ object. array size, object properties,
 	 * string length. Do not change it!! Its made public only for reading
 	 * convenience.
 	 */
 	unsigned int size= 0;
 	
 	/**
-	 * creates an UNRECOGNIZED Txj object. Any Txj object can be
-	 * assigned any other type of Txj object.
+	 * creates an UNRECOGNIZED Txj_ object. Any Txj_ object can be
+	 * assigned any other type of Txj_ object.
 	 */
-	Txj ();
+	Txj_ ();
 	
 	/**
-	 * Copy constructor. Creates a copy of Txj object
+	 * Copy constructor. Creates a copy of Txj_ object
 	 * @param orig is the object one wants to create a copy
 	 */
-	Txj (
-		const Txj& orig, COPY_FLAGS cf= COPY_ALL,
+	Txj_ (
+		const Txj_& orig, COPY_FLAGS cf= COPY_ALL,
 		TxjPObj* pObj= NULL
 	);
 	
 	/**
-	 * Creates a Txj object from a Txj string.
-	 * @param ffjson is the Txj string to be parsed.
-	 * @param ci is the offset in Txj string to be considered. Its 0 by
+	 * Creates a Txj_ object from a Txj_ string.
+	 * @param ffjson is the Txj_ string to be parsed.
+	 * @param ci is the offset in Txj_ string to be considered. Its 0 by
 	 * default.
 	 */
-	Txj (
+	Txj_ (
 		const string& ffjson, int* ci= NULL, int indent= 0,
 		TxjPObj* pObj= NULL
 	);
@@ -404,15 +404,15 @@ public:
 	);
 	
 	/**
-	 * Creates an empty Txj object of type @param t. It throws an Exception
+	 * Creates an empty Txj_ object of type @param t. It throws an Exception
 	 * if @param t is UNRECOGNIZED or anything else other Txj_OBJ_TYPE
 	 * @param t
 	 */
-	Txj(OBJ_TYPE t);
+	Txj_(OBJ_TYPE t);
 	
-	~Txj();
+	~Txj_();
 	/**
-	 * Emptys the Txj object. For example If you want delete objects in an
+	 * Emptys the Txj_ object. For example If you want delete objects in an
 	 * array or an object, invoke it.
 	 */
 	void freeObj(bool bAssignment=false);
@@ -432,12 +432,12 @@ public:
 		{"tm", TIME},
 		{"NUL", NUL}
 	};
-	static map<Txj*, shared_mutex> MtxMap;
+	static map<Txj_*, shared_mutex> MtxMap;
 	static shared_mutex MtxMapMtx;
 	void lock (); void unlock (); void lockShared (); void unlockShared ();
 	static void prune ();
-	static Txj* MarkAsUpdatable(string& link, const Txj& rParent);
-	static Txj* UnMarkUpdatable(string& link, const Txj& rParent);
+	static Txj_* MarkAsUpdatable(string& link, const Txj_& rParent);
+	static Txj_* UnMarkUpdatable(string& link, const Txj_& rParent);
 	
 	void insertFeaturedMember (FeaturedMember& fms, FeaturedMemType fMT);
 	FeaturedMember getFeaturedMember (FeaturedMemType fMT) const;
@@ -485,14 +485,14 @@ public:
 	 */
 	void trim ();
 	/**
-	 * Gives Txj object type of Txj string.
-	 * @param ffjson is the Txj string.
-	 * @return Txj object type.
+	 * Gives Txj_ object type of Txj_ string.
+	 * @param ffjson is the Txj_ string.
+	 * @return Txj_ object type.
 	 */
 	OBJ_TYPE objectType (string ffjson);
 	/**
-	 * Converts Txj object into Txj string.
-	 * @return Txj string.
+	 * Converts Txj_ object into Txj_ string.
+	 * @return Txj_ string.
 	 */
 	string stringify (
 		bool json= false, bool bGetQueryStr= false,
@@ -506,7 +506,7 @@ public:
 	#define GetQueryString(...) stringify(false,true,NULL);
 	
 	/**
-	 * Converts Txj object into Txj pretty string that has indents where
+	 * Converts Txj_ object into Txj_ pretty string that has indents where
 	 * they needed
 	 * @param indent : Dont bother about it! Its 0 by default which you need. If
 	 * you insist, it prepends its value number of indents to the output. To get
@@ -519,8 +519,8 @@ public:
 		bool printFilePath= false, bool save= false
 	) const;
 	/**
-	 * Generates a query string which can be used to query a Txj tree. Query
-	 * string is constructed based on SET, QUERY and DELETE marks on the Txj
+	 * Generates a query string which can be used to query a Txj_ tree. Query
+	 * string is constructed based on SET, QUERY and DELETE marks on the Txj_
 	 * objects.
 	 * E.g.
 	 * {animals:{horses:{count:?,colors:?}}} can be used to query horses count
@@ -529,8 +529,8 @@ public:
 	 */
 	string queryString();
 	/**
-	 * Generates an answer string for a query object from the Txj tree. Query
-	 * object is the Txj object returned by Txj(queryString).
+	 * Generates an answer string for a query object from the Txj_ tree. Query
+	 * object is the Txj_ object returned by Txj_(queryString).
 	 * E.g.
 	 * {animals:{horses:{count:35,colors:["white","black","brown"]}}}
 	 * can be the answer string for
@@ -539,15 +539,15 @@ public:
 	 * @param queryString
 	 * @return Answer string
 	 */
-	Txj* answerString (Txj& queryObject);
+	Txj_* answerString (Txj_& queryObject);
 	
-	Txj* answerObject (
-		Txj* queryObject, TxjPObj* pObj= nullptr,
-		FerryTimeStamp lastUpdateTime= FerryTimeStamp(), Txj* ao= nullptr
+	Txj_* answerObject (
+		Txj_* queryObject, TxjPObj* pObj= nullptr,
+		FerryTimeStamp lastUpdateTime= FerryTimeStamp(), Txj_* ao= nullptr
 	);
 	void erase (string name);
 	void erase (int index);
-	void erase (Txj* value);
+	void erase (Txj_* value);
 	uint erase (uint start, uint end);
 	int save (
 		bool json= false, bool printComments= true, unsigned int indent=0,
@@ -558,28 +558,28 @@ public:
 	Iterator end ();
 	Iterator find (const string& key);
 	void SelfTest ();
-	Txj& addLink (const Txj& obj, string label);
-	Txj& addLink (const string&& objPath, const string&& linkPath);
-	Txj& operator [] (const char* prop);
-	Txj& operator [] (const string& prop);
-	Txj& operator [] (const int index);
-	Txj& operator [] (void);
+	Txj_& addLink (const Txj_& obj, string label);
+	Txj_& addLink (const string&& objPath, const string&& linkPath);
+	Txj_& operator [] (const char* prop);
+	Txj_& operator [] (const string& prop);
+	Txj_& operator [] (const int index);
+	Txj_& operator [] (void);
 	
 	template <typename T>
-	Txj& operator= (T* t) {
+	Txj_& operator= (T* t) {
 		freeObj ();
 		val.vptr= (uint8_t*)t;
 		setType(VPTR);
 		return *this;
 	}
 	/**
-	 * returns null Txj object if invalid pointer. Deletes the object on
-	 * deleting this Txj object if its the last reference.
+	 * returns null Txj_ object if invalid pointer. Deletes the object on
+	 * deleting this Txj_ object if its the last reference.
 	 * @param t pointer to any object
-	 * @return Txj object of BINARY type
+	 * @return Txj_ object of BINARY type
 	 */
 	template <typename T>
-	Txj& operator= (const T& t) {
+	Txj_& operator= (const T& t) {
 		freeObj ();
 		flDbg(TXJ_MAIN, "size:%d", sizeof(T));
 		size= sizeof (T);
@@ -588,22 +588,22 @@ public:
 		setType (BINARY);
 		return *this;
 	}
-	Txj& operator = (const char* s);
-	//Txj& operator = (char* s);
-	Txj& operator = (Blob_ b);
-	Txj& operator = (const string& s);
-	Txj& operator = (const int& i);
-	Txj& operator = (const unsigned int& i);
-	Txj& operator = (const double& d);
-	Txj& operator = (const float& f);
-	Txj& operator = (const short& s);
-	Txj& operator = (const long& l);
-	Txj& operator = (const bool& b);
-	Txj& operator = (const Txj& f);
-	Txj& operator = (Txj* f);
+	Txj_& operator = (const char* s);
+	//Txj_& operator = (char* s);
+	Txj_& operator = (Blob_ b);
+	Txj_& operator = (const string& s);
+	Txj_& operator = (const int& i);
+	Txj_& operator = (const unsigned int& i);
+	Txj_& operator = (const double& d);
+	Txj_& operator = (const float& f);
+	Txj_& operator = (const short& s);
+	Txj_& operator = (const long& l);
+	Txj_& operator = (const bool& b);
+	Txj_& operator = (const Txj_& f);
+	Txj_& operator = (Txj_* f);
 
-	Txj& operator * ();
-	Txj* operator -> ();
+	Txj_& operator * ();
+	Txj_* operator -> ();
 	
 	template<typename T>
 	operator T& () {
@@ -623,7 +623,7 @@ public:
 	operator unsigned int ();
 	operator long ();
 	void copy (
-		const Txj& orig, COPY_FLAGS cf= COPY_NONE,
+		const Txj_& orig, COPY_FLAGS cf= COPY_NONE,
 		TxjPObj* pObj= NULL
 	);
 private:
@@ -634,22 +634,22 @@ private:
 	static bool inline isWhiteSpace (char c);
 	static bool inline isTerminatingChar (char c);
 	static bool inline isInitializingChar (char c);
-	static std::map<Txj*, set<TxjIterator> > sm_mUpdateObjs;
-	Txj* returnNameIfDeclared (vector<string>& prop,
+	static std::map<Txj_*, set<TxjIterator> > sm_mUpdateObjs;
+	Txj_* returnNameIfDeclared (vector<string>& prop,
 										TxjPObj* fpo= nullptr) const;
-	bool inherit (Txj& obj, TxjPObj* pFPObj);
+	bool inherit (Txj_& obj, TxjPObj* pFPObj);
 	void ReadMultiLinesInContainers (
 		const string& ffjson, int& i,
 		TxjPObj& pObj
 	);
 	string ConstructMultiLineStringArray (
-		vector<Txj*>& vpfMulLnStrs,
+		vector<Txj_*>& vpfMulLnStrs,
 		int indent, vector<int>& vClWidths) const;
 	LinkNRef GetLinkString (TxjPObj* pObj);
 };
-static Txj nullTxj;
-ostream& operator << (ostream& out, const Txj& f);
+static Txj_ nullTxj;
+ostream& operator << (ostream& out, const Txj_& f);
 
-bool operator < (const Txj& lhs, const Txj& rhs);
+bool operator < (const Txj_& lhs, const Txj_& rhs);
 
 #endif

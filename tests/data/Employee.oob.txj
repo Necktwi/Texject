@@ -1,21 +1,18 @@
 name: "Gowtham",
-"id": 1729,
+id: 1729,
 isProgrammer: true,
-Favlanguages: [
+favLang: [
 	"C++", "Javascript", "lisp"
 ],
-langScores: [
-	    9,            8,      7
-] | Favlanguages,
-"address": [
-	"town": "KAKINADA",
+its oob enclosed in [] where as obj(object) is enclosed in {}: [
+	town: "KAKINADA",
 	country: "Bharath"
 ],
-"biography": "
-	He is smart, brilliant, genius, empathetic, creative, connective,
-	patient, handsome, valient, romantic ;)
+biography: "
+	He is smart, brilliant, genius, empathetic, creative, connective, patient,
+	handsome, valient, romantic;) After all he made JSON with multi line string!
 ",
-physiology: {
-	iris: "blue",
-	height: "6 foot"
+its an obj; enclosed in {}; order not preserved: {
+	height: "6 foot",
+	iris: "blue"
 }

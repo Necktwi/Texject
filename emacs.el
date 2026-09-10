@@ -3,7 +3,7 @@
 ;;; It sets cmake-ide variables
 
 ;;; Code:
-(defvar CMakeProject "FFJSON")
+(defvar CMakeProject "Texject")
 (require 'cmake-ide)
 
 (setq cmake-ide-build-dir
@@ -15,8 +15,8 @@
 	         "-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
             "-DBUILD_TESTING=1"))
 (defvar MakeThreadCount 1)
-(defvar DebugTarget "TestFFJSON")
+(defvar DebugTarget "testUnits")
 (defvar TargetArguments "-s normal")
-(message "FFJSON emacs project loaded.")
-(provide 'FFJSON)
+(message "Texject emacs project loaded.")
+(provide 'Texject)
 ;;; emacs.el ends here

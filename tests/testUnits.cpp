@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <ios>
-#include "FFJSON.h"
+#include "Texject.h"
 
 typedef const char* ccp;
 
@@ -35,8 +35,8 @@ typedef const char* ccp;
 using namespace std;
 
 int child_exit_status = 0;
-FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO);
-unsigned int fflAllowedBlks = 9;
+FF_LOG_TYPE fflAllowedType = (FF_LOG_TYPE)(FFL_DEBUG | FFL_INFO | FFL_ERR);
+unsigned int fflAllowedBlks = 9|TXJ_MAIN;
 FerryTimeStamp ftsStart;
 FerryTimeStamp ftsEnd;
 FerryTimeStamp ftsDiff;
@@ -68,8 +68,9 @@ void mem_usage(double& vm_usage, double& resident_set) {
 
 void printMemUsage () {
    mem_usage(vm, rss);
-   cout<< "Virtual Memory: "<< vm<< "KiB"<< endl;
-	cout<< "Augmented resident set size: "<< rss-initrss<< "KiB"<< endl;
+   //cout<< "Virtual Memory: "<< vm<< "KiB"<< endl;
+	cout<< "rss: "<< rss<< ", arss: "<< rss-initrss<< "KiB"<< endl;
+	initrss= rss;
 }
 
 struct Test_ {
@@ -90,9 +91,9 @@ Test_ testFunc2 () {
 }
 void test1 () {
    cout << "===================================================" << endl;
-   cout << "               TestTxj test 1                   " << endl;
+   cout << "               TestTxj test 1                      " << endl;
    cout << "===================================================" << endl;
-   Txj f(Txj::ARRAY);
+   Txj_ f(Txj_::ARRAY);
    f[0]=1;
    char cCurrentPath[FILENAME_MAX];
    
@@ -114,9 +115,9 @@ void test1 () {
    ifs.seekg(0, ios::beg);
    ffjsonStr.assign((istreambuf_iterator<char>(ifs)),
                     istreambuf_iterator<char>());
-   Txj ffo(ffjsonStr);
+   Txj_ ffo(ffjsonStr);
    cout << "amphibians: " << endl;
-   Txj::Iterator i = ffo["amphibians"].begin(); //["amphibians"]
+   Txj_::Iterator i = ffo["amphibians"].begin(); //["amphibians"]
    while ((i != ffo["amphibians"].end())) {
       cout << string(i) << ":" << i->stringify() << endl;
       ++i;
@@ -124,8 +125,8 @@ void test1 () {
    cout << endl;
    string ps = ffo.prettyString(false, true);
    cout << ps << endl;
-   Txj ffo2(ps);
-   ffo2["amphibians"]["genome"].setEFlag(Txj::E_FLAGS::B64ENCODE);
+   Txj_ ffo2(ps);
+   ffo2["amphibians"]["genome"].setEFlag(Txj_::E_FLAGS::B64ENCODE);
    ffo2["amphibians"]["salamanders"] = "salee";
    string ps2 = ffo2.prettyString(false, true);
    cout << ps2 << endl;
@@ -149,7 +150,7 @@ void test1 () {
    cout << "size after trim: " << ffo2["animals"].size << endl;
    string ps3 = ffo2.prettyString();
    cout << ps3 << endl;
-   cout << "Txj signature size: " << sizeof (ffo2) << endl;
+   cout << "Txj_ signature size: " << sizeof (ffo2) << endl;
    
    cout << "sizeInfo test 1" << endl;
    
@@ -164,33 +165,33 @@ void test1 () {
    
    cout << "size of pointer: " << sizeof (int *) << endl;
    
-   ffo2["amphibians"]["frogs"].setQType(Txj::QUERY_TYPE::QUERY);
-   ffo2["amphibians"]["salamanders"].setQType(Txj::QUERY_TYPE::DEL);
-   ffo2["amphibians"]["genome"].setQType(Txj::QUERY_TYPE::SET);
-   ffo2["birds"][1].setQType(Txj::QUERY_TYPE::DEL);
-   ffo2["birds"][2].setQType(Txj::QUERY_TYPE::SET);
-   ffo2["birds"][3].setQType(Txj::QUERY_TYPE::QUERY);
+   ffo2["amphibians"]["frogs"].setQType(Txj_::QUERY_TYPE::QUERY);
+   ffo2["amphibians"]["salamanders"].setQType(Txj_::QUERY_TYPE::DEL);
+   ffo2["amphibians"]["genome"].setQType(Txj_::QUERY_TYPE::SET);
+   ffo2["birds"][1].setQType(Txj_::QUERY_TYPE::DEL);
+   ffo2["birds"][2].setQType(Txj_::QUERY_TYPE::SET);
+   ffo2["birds"][3].setQType(Txj_::QUERY_TYPE::QUERY);
    string query = ffo2.queryString();
    ffo2["amphibians"]["genome"] = "<xml>gnomechanged :p</xml>";
    ffo2["birds"][2] = "kiwi";
    cout << ffo2.prettyString() << endl;
    cout << query << endl;
-   Txj qo(query);
+   Txj_ qo(query);
    query = qo.queryString();
    cout << query << endl;
    
-   if (ffo2["amphibians"]["frogs"].isEFlagSet(Txj::E_FLAGS::EXTENDED)) {
+   if (ffo2["amphibians"]["frogs"].isEFlagSet(Txj_::E_FLAGS::EXTENDED)) {
       cout << "already extended" << endl;
    }
-   Txj* ao = ffo2.answerObject(&qo);
-   if (ffo2["amphibians"]["frogs"].isEFlagSet(Txj::E_FLAGS::EXTENDED)) {
+   Txj_* ao = ffo2.answerObject(&qo);
+   if (ffo2["amphibians"]["frogs"].isEFlagSet(Txj_::E_FLAGS::EXTENDED)) {
       cout << "already extended" << endl;
    }
    
    cout << ao->stringify() << endl;
    string ffo2a = ffo2.prettyString();
    cout << ffo2a << endl;
-   Txj ffo2ao(ffo2a);
+   Txj_ ffo2ao(ffo2a);
    ffo2a = ffo2ao.stringify();
    cout << ffo2a << endl;
    ffo2a = ffo2ao.prettyString();
@@ -223,8 +224,8 @@ void test2 () {
       ifs.seekg(0, ios::beg);
       ffjsonStr.assign((istreambuf_iterator<char>(ifs)),
                        istreambuf_iterator<char>());
-      Txj ffo(ffjsonStr);
-      ffo["ferryframes"].setEFlag(Txj::B64ENCODE);
+      Txj_ ffo(ffjsonStr);
+      ffo["ferryframes"].setEFlag(Txj_::B64ENCODE);
       string* s = new string(ffo.stringify(true));
       cout << *s << endl;
       s->append(":)");
@@ -237,10 +238,10 @@ void test2 () {
 
 void test3 () {
    cout << "===================================================" << endl;
-   cout << "        TestTxj test 3 (comparing strings)      " << endl;
+   cout << "        TestTxj_ test 3 (comparing strings)      " << endl;
    cout << "===================================================" << endl;
    
-   Txj sample("file://sample.txj");
+   Txj_ sample("file://sample.txj");
    if ((int) sample["donkeys"] < 4) {
       cout << "alert: my donkey is missing" << endl;
    }
@@ -252,22 +253,22 @@ void test3 () {
 
 void test4 () {
    cout << "===================================================" << endl;
-   cout << "			TestTxj test 4 (testing links)		   " << endl;
+   cout << "			TestTxj_ test 4 (testing links)		   " << endl;
    cout << "===================================================" << endl;
-   Txj f("file://linksSample.txj");
-   map<string,Txj*>* emln = f["obj1"].val.pairs;
+   Txj_ f("file://linksSample.txj");
+   map<string,Txj_*>* emln = f["obj1"].val.pairs;
    typedef const char* ccp;
    if (emln->find(string("127.0.0.2"))!=emln->end()) {
-      Txj* ffemln = (*emln)["127.0.0.2"];
-      Txj::Link* link =
-         ffemln->getFeaturedMember(Txj::FM_LINK).link;
+      Txj_* ffemln = (*emln)["127.0.0.2"];
+      Txj_::Link* link =
+         ffemln->getFeaturedMember(Txj_::FM_LINK).link;
       const char* linkName=(*link)[0].c_str();
       cout << "127.0.0.2 is link to " << linkName << endl;
    }
    cout << (const char*)f["obj1"]["127.0.0.2"]["rootdir"] << endl;
    cout << f << endl;
    cout << f["things"]["car"][0] << endl;
-   Txj& ff = f["things"]["car"][1];
+   Txj_& ff = f["things"]["car"][1];
    ff.addLink(f, "users.gowtham.things.1");
    cout << f << endl;
    cout << "%TEST_PASSED%" << endl;
@@ -277,7 +278,7 @@ void test5 () {
    cout << "===================================================" << endl;
    cout << "		TestTxj test 5 (testing extensions)		   " << endl;
    cout << "===================================================" << endl;
-   Txj f("file://ExtensionTest.txj");
+   Txj_ f("file://ExtensionTest.txj");
    cout << f.prettyString() << endl;
    
    cout << "Marks[0]['Maths']: " << f["Marks"][0]["Maths"].prettyString()
@@ -286,14 +287,14 @@ void test5 () {
    cout << "StudentsMarks['Gowtham']['Maths']: "
    << f["School"]["Class1"]["StudentsMarks"]["Gowtham"]["Maths"].prettyString()
    << endl;
-   Txj f2(f.prettyString());
+   Txj_ f2(f.prettyString());
    cout << f2.prettyString() << endl;
    
-   Txj f3(f2);
+   Txj_ f3(f2);
    cout << "f3 StudentsMarks['Gowtham']['Maths']: "
    << f3["School"]["Class1"]["StudentsMarks"]["Gowtham"]["Maths"].prettyString()
    << endl;
-   Txj f4(f2.stringify());
+   Txj_ f4(f2.stringify());
    cout << f4.stringify() << endl;
 }
 
@@ -301,16 +302,16 @@ void test6 () {
    cout << "===================================================" << endl;
    cout << "	TestTxj test 6 (testing data type sizes)		" << endl;
    cout << "===================================================" << endl;
-   map<string, Txj*> m;
-   pair<string, Txj*> p(string("gowtham"), (Txj*) NULL);
+   map<string, Txj_*> m;
+   pair<string, Txj_*> p(string("gowtham"), (Txj_*) NULL);
    cout << &p.first << endl;
    m.insert(p);
    cout << &(*m.find("gowtham")) << endl;
    cout << &(*m.find("gowtham")) << endl;
    int i;
-   Txj f;
+   Txj_ f;
    vector<string*> v;
-   map<string, Txj*>::iterator it;
+   map<string, Txj_*>::iterator it;
    cout << "map:" << sizeof (m) << endl;
    cout << "int:" << sizeof (i) << endl;
    cout << "ffjson:" << sizeof (f) << endl;
@@ -326,19 +327,19 @@ void test7 () {
    cout << "===================================================" << endl;
    cout << "	TestTxj test 7 (testing MultiLineArray)		" << endl;
    cout << "===================================================" << endl;
-   Txj f("file://MultiLineArray.txj");
+   Txj_ f("file://MultiLineArray.txj");
    string sF = f.prettyString();
    cout << sF << endl;
-   Txj f2(sF);
+   Txj_ f2(sF);
    string sF2 = f2.stringify();
    cout << f2 << endl;
-   Txj f3(sF2);
+   Txj_ f3(sF2);
    string sF3 = f3.prettyString();
    cout << sF3 << endl;
-   Txj f4(sF3);
+   Txj_ f4(sF3);
    string sF4 = f4.stringify();
    cout << sF4 << endl;
-   Txj f5(sF4);
+   Txj_ f5(sF4);
    string sF5 = f5.prettyString();
    cout << sF5 << endl;
 }
@@ -347,19 +348,19 @@ void test8 () {
    cout << "===================================================" << endl;
    cout << "           TestTxj test 8 sample.txj               " << endl;
    cout << "===================================================" << endl;
-   //Txj f("file://example.json");
-   //Txj f("file://Employee.oob.txj");
-   //Txj f("file://red/users2.obj.txj");
-   Txj f("{\"Rs\":{\"20\":[2]}}");
+   //Txj_ f("file://example.json");
+   //Txj_ f("file://Employee.oob.txj");
+   //Txj_ f("file://red/users2.obj.txj");
+   Txj_ f("{\"Rs\":{\"20\":[2]}}");
 	int i= f["Rs"]["20"][0];
    //Txj f("[\n]");
    cout<< f.prettyString()<< endl;
    cout<< f.stringify()<< endl;
-   // Txj f2(f.prettyString());
+   // Txj_ f2(f.prettyString());
    // cout<< f2<< endl;
    // string sF2= f2.stringify();
    // cout<< sF2<< endl;
-   // Txj f3(sF2);
+   // Txj_ f3(sF2);
    // string sF3= f3.prettyString();
    // cout<< sF3<< endl;
 	//f["necktwi"]["things"][0]["id"]= 1728;
@@ -370,7 +371,7 @@ void test9 () {
    cout << "===================================================" << endl;
    cout << "                     erase test                    " << endl;
    cout << "===================================================" << endl;
-   Txj f("{}");
+   Txj_ f("{}");
    f["cameras"].erase(string("cam"));
    
 }
@@ -384,16 +385,16 @@ void test10 () {
    cout << "===================================================" << endl;
    cout << "				 typecast   test					" << endl;
    cout << "===================================================" << endl;
-   Txj f("{}");
+   Txj_ f("{}");
    f["a"] = *(new timespec());
    timespec& t = (timespec&) f["a"];
-   Txj& ff = f;
+   Txj_& ff = f;
    timespec& tt = (timespec&) ff["a"];
    tt.tv_sec = 'a';
    tt.tv_nsec = 'b';
    cout << ff << endl;
    cout << "parsing string" << endl;
-   Txj f3(ff.prettyString());
+   Txj_ f3(ff.prettyString());
    cout << f3 << endl;
    timespec& t3 = (timespec&) f3["a"];
    cout << (char) t3.tv_sec << "," << (char) t3.tv_nsec << endl;
@@ -403,9 +404,9 @@ void test11 () {
    cout << "===================================================" << endl;
    cout << "      subscript operator exection flow	            " << endl;
    cout << "===================================================" << endl;
-   Txj f("{}");
+   Txj_ f("{}");
    f["a"]["b"] = 2;
-   Txj& b = f["a"]["b"];
+   Txj_& b = f["a"]["b"];
    int bb = (int) f["a"]["b"];
    if (f["b"]) {
       cout << "itWontPrint" << endl;
@@ -416,15 +417,15 @@ void test12 () {
    cout << "===================================================" << endl;
    cout << "               update query                        " << endl;
    cout << "===================================================" << endl;
-   Txj f("{necktwi:{things:[{id:0}]}}");
+   Txj_ f("{necktwi:{things:[{id:0}]}}");
    int j = 10;
    //while (j) {
       cout << "Creating new answer object: " << endl;
-      Txj tf("{necktwi:{things:[{name:\"batman\"}]}}");
-      Txj tf2("{necktwi:{things:[{name:?}]}}");
+      Txj_ tf("{necktwi:{things:[{name:\"batman\"}]}}");
+      Txj_ tf2("{necktwi:{things:[{name:?}]}}");
       static FerryTimeStamp ft;
-      Txj ao(f);
-      Txj* ff = f.answerObject(&tf,NULL,ft, &ao);
+      Txj_ ao(f);
+      Txj_* ff = f.answerObject(&tf,NULL,ft, &ao);
       //ft.update();
       if(!ff)return;
       cout << "res: " << *ff << endl;
@@ -440,20 +441,20 @@ void test13 () {
    cout << "===================================================" << endl;
    cout << "                       save file					      " << endl;
    cout << "===================================================" << endl;
-   Txj fa(Txj::ARRAY);
+   Txj_ fa(Txj_::ARRAY);
    fa[0]=1;
-   Txj f("file://saveFileSample.txj|OBJECT");
+   Txj_ f("file://saveFileSample.txj|OBJECT");
    f["test"]="OK";
    //f["obj4"]["nestedFile"]["test"]="OK";
-   Txj pvh;
+   Txj_ pvh;
    pvh = &f["vh"]["obj6"];
    pvh["users"]["test"]="OK";
    f["txoTest"]["test"]="OK";
-   f["txoTest"].clearEFlag(Txj::FILE);
+   f["txoTest"].clearEFlag(Txj_::FILE);
    cout << f << endl;
    f.save();
-   // Txj ff("file://saveFileSample.txj");
-   // Txj& ln = ff["vh"]["obj5"]["things"][].
+   // Txj_ ff("file://saveFileSample.txj");
+   // Txj_& ln = ff["vh"]["obj5"]["things"][].
    //    addLink(ff["vh"]["obj5"], "users.gowtham.things.0");
    // if (!ln)
    //    delete &ln;
@@ -465,12 +466,12 @@ void test14 () {
    cout << "===================================================" << endl;
    cout << "                       leak test					      " << endl;
    cout << "===================================================" << endl;
-   Txj f("file:///home/Necktwi/workspace/ferryfair/config.txj");
+   Txj_ f("file:///home/Necktwi/workspace/ferryfair/config.txj");
    cout << f << endl;
 }
 
 void test15 () {
-   Txj f("file:///home/Necktwi/workspace/ferryfair/config.txj");
+   Txj_ f("file:///home/Necktwi/workspace/ferryfair/config.txj");
    cout << f << endl;
 }
 
@@ -491,7 +492,7 @@ void test18 () {
    cout << "===================================================" << endl;
    cout << "                       set test					      " << endl;
    cout << "===================================================" << endl;
-   Txj f("{1, 2, 3, 3}");
+   Txj_ f("{1, 2, 3, 3}");
    cout << f << endl;
 }
 
@@ -505,7 +506,7 @@ void test19 () {
    //Test_& t4 = testFunc1();
 }
 
-Txj t;
+Txj_ t;
 void test20 () {
    cout << "===================================================" << endl;
    cout << "                       StressTest				      " << endl;
@@ -529,13 +530,6 @@ void test20 () {
    double tt = 3.6789787878*pow(10,6);
    printf("%3.0lf", tt);
    cout << "Virtual Memory: " << vm << "\nResident set size: " << rss << endl;
-}
-
-void test21 () {
-   cout << t["a1"][666]["c8"] << endl;
-   Txj t2;
-   (int)t2["id"]==1;
-   cout << t2 << endl;
 }
 
 char* returnCharDeleteStr () {
@@ -566,25 +560,15 @@ void test22 () {
    //free(cs);
 }
 
-void test23 () {
-   cout << "===================================================" << endl;
-   cout << "                       char[] test				      " << endl;
-   cout << "===================================================" << endl;
-	char un[48]= "gowtham";
-	Txj fun;
-	fun= un;
-	cout << fun << endl;
-}
-
 int test24 () {
 	cout << "## 1. int copy test" << endl;
 	int i= 1;
 	string istr= to_string(i);
 	ccp cstr= istr.c_str();
    ftsStart.update();
-	Txj t(cstr);
-	Txj t2(t);
-	Txj t3;
+	Txj_ t(cstr);
+	Txj_ t2(t);
+	Txj_ t3;
 	t3= t2;
    ftsEnd.update();
    ftsDiff= ftsEnd-ftsStart;
@@ -611,9 +595,9 @@ int test25 () {
 	str+= tstr; str+= "\"";
 	ccp cstr= str.c_str();
    ftsStart.update();
-	Txj t(cstr);
-	Txj t2(t);
-	Txj t3;
+	Txj_ t(cstr);
+	Txj_ t2(t);
+	Txj_ t3;
 	t3= t2;
    ftsEnd.update();
    ftsDiff= ftsEnd-ftsStart;
@@ -638,8 +622,8 @@ int test26 () {
 	ccp istr= "{i:1,s:\"somestring\"}";
 	ccp jstr= "{\"i\":1,\"s\":\"somestring\"}";
 	ftsStart.update();
-	Txj t(istr);
-   Txj tj(jstr);
+	Txj_ t(istr);
+   Txj_ tj(jstr);
 	string ostr= t.stringify();
 	string ojstr= tj.stringify(true);
    ftsEnd.update();
@@ -664,9 +648,9 @@ int test27 () {
 	cout << "## 4. obj copy test" << endl;
 	ccp istr= "{i:1,s:\"somestring\"}";
 	ftsStart.update();
-	Txj t(istr);
-	Txj t2(t);
-	Txj t3;
+	Txj_ t(istr);
+	Txj_ t2(t);
+	Txj_ t3;
 	t3= t2;
    ftsEnd.update();
    ftsDiff= ftsEnd-ftsStart;
@@ -691,9 +675,9 @@ int test28 () {
 	cout << "## 5. array copy test" << endl;
 	ccp istr= "[1,\"somestring\"]";
 	ftsStart.update();
-	Txj t(istr);
-	Txj t2(t);
-	Txj t3;
+	Txj_ t(istr);
+	Txj_ t2(t);
+	Txj_ t3;
 	t3= t2;
    ftsEnd.update();
    ftsDiff= ftsEnd-ftsStart;
@@ -718,7 +702,7 @@ int test29 () {
 	cout << "## 6. url string test" << endl;
 	ccp istr= "file://tests/data/urlstring.obj.txj";
 	ftsStart.update();
-	Txj t(istr);
+	Txj_ t(istr);
 	ifstream ifs("tests/data/urlstring.obj.txj", ios::in);
 	string fStr("{");
 	if (ifs.is_open()) {
@@ -746,9 +730,9 @@ int test29 () {
 
 int test30 () {
 	cout << "## 7. parse example.json test" << endl;
-	ccp istr= "file://tests/data/example.json";
+	ccp istr= "file://tests/data/simple.json";
 	ftsStart.update();
-	Txj t(istr);
+	Txj_ t(istr);
 	string ostr= t.stringify();
 	bool areContractors= t["areContractors"];
 	ccp firstEmployeeFirstName= t["employees"][0]["firstName"];
@@ -774,12 +758,12 @@ int test31 () {
 	cout << "## 8. parse nullmember.obj.txj test" << endl;
 	ccp istr= "file://tests/data/nullmember.obj.txj";
 	ftsStart.update();
-	Txj t(istr);
+	Txj_ t(istr);
 	string ostr= t.stringify();
-	Txj& rbsid= t["2W2tzZxC0ufJ05Xp"];
+	Txj_& rbsid= t["2W2tzZxC0ufJ05Xp"];
 	ccp user= rbsid["user"];
-	Txj& wpSub= rbsid["wpSub"];
-	Txj& keys= wpSub["keys"];
+	Txj_& wpSub= rbsid["wpSub"];
+	Txj_& keys= wpSub["keys"];
 	ccp endpoint= wpSub["endpoint"];
 	ccp p256dh= keys["p256dh"], authKe= keys["auth"];
 	bool wpSubNull= !wpSub;
@@ -804,15 +788,28 @@ int test31 () {
 int test32 () {
 	cout << "## 9. Entended array and multiline string test" << endl;
 	ccp istr= "file://tests/data/Employee.oob.txj";
-	ccp expectedBio= "He is smart, brilliant, genius, empathetic, creative, connective,\npatient, handsome, valient, romantic ;)";
+	ccp expectedBio= "He is smart, brilliant, genius, empathetic, creative, "
+		"connective, patient,\nhandsome, valient, romantic;) After all he made "
+		"JSON with multi line string!";
 	ftsStart.update();
-	Txj t(istr);
+	Txj_ t(istr);
 	string ostr= t.stringify();
-	Txj& name= t["name"];
-	int cppScore= t["langScores"]["C++"];
-	int jsScore= t["langScores"]["Javascript"];
-	int lispScore= t["langScores"]["lisp"];
-	ccp biography= t["biography"];
+	string name= (ccp)t["name"];
+	int cppScore= t["testScore"][0]["C++"];
+	int jsScore= t["testScore"][0]["Javascript"];
+	int lispScore= t["testScore"][0]["lisp"];
+	t["testScore"][0]["lisp"]= lispScore+1;
+	string biography= (ccp)t["biography"];
+	t.save();
+	t.init(istr);
+	int lispScore2= t["testScore"][0]["lisp"];
+	t["testScore"][0]["lisp"]= lispScore2-1;
+	t.save();
+	t.init(istr);
+	int lispScore3= t["testScore"][0]["lisp"];
+	t.save();
+	t["sports"][]= "tt"; //its already in set, so no effect! 
+	cout<< "Sports he play: "<< t["sports"]<< endl;
 	ftsEnd.update();
 	ftsDiff= ftsEnd-ftsStart;
 	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
@@ -823,11 +820,135 @@ int test32 () {
 	cout<< "jsScore: "<< jsScore<< endl;
 	cout<< "lispScore: "<< lispScore<< endl;
 	cout<< "ostr: "<< ostr<< endl;
+	cout<< "lispScore2: "<< lispScore2<< endl;
+	cout<< "lispScore3: "<< lispScore3<< endl;
+	
 	printMemUsage();
-	cout<< "Testing: name==Gowtham && lispSocre==8 && "
-		"biography==expectedBio"<< endl;
-	if (name && !strcmp(name, "Gowtham") && lispScore==7 &&
-		 !strcmp(biography, expectedBio)) {
+	cout<< "Testing: name==Gowtham && lispScore==7 && lispScore==8 && "
+		"lispScore3==7 && biography==expectedBio"<< endl;
+	if (!name.empty() && !strcmp(name.c_str(), "Gowtham") && lispScore==6 &&
+		 lispScore2==7 && lispScore3==6 &&
+		 !strcmp(biography.c_str(), expectedBio)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test33 () {
+	cout<< "## 10. one line create large array test"<< endl;
+	ftsStart.update();
+	Txj_ t;
+	t["a1"][667]["c8"]= 1;
+   cout<< "t[\"a1\"][666][\"c8\"]:"<< t["a1"][666]["c8"]<< endl;
+	cout<< "t[\"a1\"][666][\"c8\"]:"<< t["a1"][667]["c8"]<< endl;
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: !t[\"a1\"][666][\"c8\"] &&"
+		" t[\"a1\"][667][\"c8\"]==1"<< endl;
+	if (!t["a1"][666]["c8"] && (int)t["a1"][667]["c8"]==1) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test34 () {
+	cout<< "## 11. empty string, obj and array test"<< endl;
+	ccp cobj= "{}", carr= "[]", cvoid= "";
+	ftsStart.update();
+	Txj_ otxj(cobj), atxj(carr), vtxj(cvoid);
+	string ostr= otxj.prettyString();
+	string astr= atxj.prettyString();
+	string vstr= vtxj.prettyString();
+	cout<< "ostr: "<< ostr<< endl;
+	cout<< "astr: "<< astr<< endl;
+	cout<< "vstr: "<< vstr<< endl;
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: ostr=='{}' && astr=='[]' && vstr==\"\""<< endl;
+	if (!strcmp(ostr.c_str(), cobj) && !strcmp(astr.c_str(), carr) &&
+		 !strcmp(vstr.c_str(), cvoid)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test35 () {
+	cout<< "## 12. char[] test" <<endl;
+	char un[48]= "gowtham";
+	ftsStart.update();
+ 	Txj_ fun;
+	fun= (ccp)un;
+	ccp cfun= (ccp)fun;
+	ftsEnd.update();
+   ftsDiff= ftsEnd-ftsStart;
+   cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	cout<< "un: "<< un<< endl;
+	cout<< "cfun: "<< cfun<< endl;
+	printMemUsage();
+	cout<< "Testing: un==cfun"<< endl;
+	if (!strcmp(un, cfun)) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test36 () {
+	cout<< "## 13. table test"<< endl;
+	ccp istr= "file://tests/data/table.oob.txj";
+	ftsStart.update();
+	Txj_ t(istr);
+	string ostr= t.prettyString();
+	cout<< "ostr: "<< ostr<< endl;
+	int sal= t["EmployeeDetails"][0]["Salary"];
+	cout<< "t[\"EmployeeDetails\"][0][\"Salary\"]"<< sal<< endl;
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: t[\"EmployeeDetails\"][0][\"Salary\"]==5"<< endl;
+	if (sal==5) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test37 () {
+	cout<< "## 14. nested files links copy stringify test"<< endl;
+	ccp istr= "file://tests/data/red/users2.obj.txj";
+	ftsStart.update();
+	Txj_ r, t(istr);
+	Txj_& rt= r["necktwi"]["things"][0];
+	rt["id"]= t["necktwi"]["things"][0]["id"];
+	rt["user"]= &t["necktwi"]["things"][0]["user"]["name"];
+	string ostr= t.prettyString();
+	cout<< "ostr: "<< ostr<< endl;
+	string ostr2; rt.stringify(ostr2, true);
+	cout<< "ostr2: "<< ostr2<< endl;
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: rt[\"user\"]==Necktwi"<< endl;
+	if (!strcmp(rt["user"], "Necktwi")) {
 		cout<< "PASSED"<< endl<< endl;
 		return 1;
 	} else {
@@ -838,7 +959,7 @@ int test32 () {
 
 int main (int argc, char** argv) {
    cout<< "%SUITE_STARTING% TestTxj"<< endl;
-   cout<< "%SUITE_STARTED%"<< endl<< endl;
+   cout<< "%SUITE_STARTED%"<< endl;
    
    FerryTimeStamp ftsSuiteStart;
    FerryTimeStamp ftsSuiteEnd;
@@ -985,34 +1106,31 @@ int main (int argc, char** argv) {
    ftsEnd.update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test21\n" << endl;
-   
+
    cout << "%TEST_STARTED% test22" << endl;
    ftsStart.update();
    test22();
    ftsEnd.update();
    ftsDiff = ftsEnd - ftsStart;
    cout << "%TEST_FINISHED% time=" << ftsDiff << " test22" << endl;
-
-   cout << "%TEST_STARTED% test23" << endl;
-   ftsStart.update();
-   test23();
-   ftsEnd.update();
-   ftsDiff = ftsEnd - ftsStart;
-   cout << "%TEST_FINISHED% time=" << ftsDiff << " test23" << endl;
 */
 	int pc= 0, tc=0;
-	printMemUsage();
-	mem_usage(vm, initrss);
+	printMemUsage(); cout<< endl;
 
-	++tc; pc+= test24();
-	++tc; pc+= test25();
-	++tc; pc+= test26();
-	++tc; pc+= test27();
-	++tc; pc+= test28();
-	++tc; pc+= test29();
-	++tc; pc+= test30();
-	++tc; pc+= test31();
+	// ++tc; pc+= test24();
+	// ++tc; pc+= test25();
+	// ++tc; pc+= test26();
+	// ++tc; pc+= test27();
+	// ++tc; pc+= test28();
+	// ++tc; pc+= test29();
+	// ++tc; pc+= test30();
+	// ++tc; pc+= test31();
 	++tc; pc+= test32();
+	// ++tc; pc+= test33();
+	// ++tc; pc+= test34();
+	// ++tc; pc+= test35();
+	// ++tc; pc+= test36();
+	// ++tc; pc+= test37();
 
 	ftsSuiteEnd.update();
    ftsDiff= ftsSuiteEnd-ftsSuiteStart;

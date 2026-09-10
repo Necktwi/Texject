@@ -139,7 +139,7 @@ if (BUILD_TESTING)
    message("${PROJECT_NAME}: BUILD_TESTS: ${BUILD_TESTS}")
    include(CTest)
    #set (GCC_COVERAGE_COMPILE_FLAGS "-std=c++23")
-   #set (GCC_COVERAGE_LINK_FLAGS "-lFFJSON -lbase -llogger")
+    #set (GCC_COVERAGE_LINK_FLAGS "-ltxj -lbase -llogger")
    #include_directories (${CMAKE_CURRENT_SOURCE_DIR} "/usr/local/include/ferryfair")
    #link_directories (${PROJECT_BINARY_DIR})
    set (CMAKE_CXX_FLAGS "${GCC_COVERAGE_COMPILE_FLAGS}")
@@ -151,7 +151,7 @@ if (BUILD_TESTING)
       linksSample.txj
       saveFileSample.txj
       MultiLevelInheritance.txj
-      MultiLineArray.txj
+      tests/data/MultiLineArray.oob.txj
       ExtensionTest.txj
       UpdateTest.json
       tests/
@@ -176,6 +176,11 @@ if (BUILD_TESTING)
    add_custom_command(TARGET testUnits PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy
       ${CMAKE_CURRENT_SOURCE_DIR}/saveFileSample.txj $<TARGET_FILE_DIR:testUnits>
+   )
+   add_custom_command(TARGET testUnits PRE_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/MultiLineArray.oob.txj
+      $<TARGET_FILE_DIR:testUnits>/MultiLineArray.txj
    )
    message("INSTALL_INTERFACE:include/${Umbrella}:"
       $<INSTALL_INTERFACE:include/${Umbrella}>
