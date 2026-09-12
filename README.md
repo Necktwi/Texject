@@ -1,8 +1,7 @@
 # Texject
-Fast C++ JSON parser; with subscript operator in C++, it serves more than just
-JSON. `Texject` is coined from text object. Texjects are JSON like data files
-with extensions `.txj`, `.obj.txj`, `.arr.txj`, `.set.txj`, `.oob.txj`, 
-`.num.txj`, `.str.txj` etc.
+Fast C++ JSON parser. With subscript operator in C++, `[]`, it serves more than just JSON. `Texject` is coined from "text object". Texjects are JSON like 
+data files with extensions `.txj`, `.obj.txj`, `.arr.txj`, `.set.txj`, 
+`.oob.txj`, `.num.txj`, `.str.txj` etc.
 - `example.txj`
 ```
 {
@@ -139,7 +138,7 @@ Sports he play: {"cricket", "badminton", "tt"}
   `.prettyString(true)` upon which it removes ` | [favlang]` and
   quotes all strings.
 
-## Installation
+## Build and Install
 ```
 git clone https://github.com/gowthamkudupudi/Texject.git
 cd Texject
@@ -147,7 +146,7 @@ mkdir build
 cmake -G "Unix Makefiles" -DBUILD_TESTING=1 -B build
 make -j`nproc`
 
-# to run unit tests
+# Run unit tests. If any fail, raise an issue.
 ./build/testUnits
 
 # to install to /usr/local/
@@ -156,6 +155,3 @@ sudo make install
 
 ## Linker option
 `-ltxj`
-
-- It got lot many cool features; look https://github.com/necktwi/Texject/blob/master/nbproject/tests/ffjsonTest.cpp
-- FFJSON acronym is "FerryFairJSON"

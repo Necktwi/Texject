@@ -29,7 +29,8 @@ typedef unsigned int uint;
 using namespace std;
 
 enum txj_log_level_ {
-	TXJ_MAIN= 1 << 0
+	TXJ_MAIN= 1 << 0,
+	TXJ_L2=   1 << 1
 };
 class Txj_;
 struct FFPtrCmp {
@@ -432,9 +433,10 @@ public:
 		{"tm", TIME},
 		{"NUL", NUL}
 	};
-	static map<Txj_*, shared_mutex> MtxMap;
+	static map<const Txj_*, shared_mutex> MtxMap;
 	static shared_mutex MtxMapMtx;
-	void lock (); void unlock (); void lockShared (); void unlockShared ();
+	void lock (); void unlock ();
+	void lockShared () const; void unlockShared () const;
 	static void prune ();
 	static Txj_* MarkAsUpdatable(string& link, const Txj_& rParent);
 	static Txj_* UnMarkUpdatable(string& link, const Txj_& rParent);
@@ -591,7 +593,7 @@ public:
 			fm.m_pTimeStamp->update();
 		}
 		freeObj ();
-		flDbg(TXJ_MAIN, "size:%d", sizeof(T));
+		flDbg(TXJ_L2, "size:%d", sizeof(T));
 		size= sizeof (T);
 		val.vptr= (uint8_t*)malloc(size);
 		(T&)(*val.vptr)= t;

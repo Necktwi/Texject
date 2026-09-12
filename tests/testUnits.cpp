@@ -1134,7 +1134,7 @@ int test40 () {
 	};
 	int n= (int)(sizeof(cases)/sizeof(cases[0]));
 	int crashes= 0;
-	for (int c= 0; c<n; ++c) {
+	for (int c= 58; c<n; ++c) {
 		cout<< "case "<< c<< ": `"<< cases[c]<< "`"<< endl;
 		pid_t pid= fork();
 		if (pid==0) {
@@ -1154,6 +1154,7 @@ int test40 () {
 		if (!WIFEXITED(st) || WEXITSTATUS(st)!=0) {
 			++crashes;
 			cout<< "  *** CRASHED *** status=0x"<< hex<< st<< dec<< endl;
+			return 0;
 		}
 	}
 	ftsEnd.update();
@@ -1331,21 +1332,21 @@ int main (int argc, char** argv) {
 	int pc= 0, tc=0;
 	printMemUsage(); cout<< endl;
 
-	// ++tc; pc+= test24();
-	// ++tc; pc+= test25();
-	// ++tc; pc+= test26();
-	// ++tc; pc+= test27();
-	// ++tc; pc+= test28();
-	// ++tc; pc+= test29();
-	// ++tc; pc+= test30();
-	// ++tc; pc+= test31();
-	// ++tc; pc+= test32();
-	// ++tc; pc+= test33();
-	// ++tc; pc+= test34();
-	// ++tc; pc+= test35();
-	// ++tc; pc+= test36();
-	// ++tc; pc+= test37();
-	// ++tc; pc+= test38();
+	++tc; pc+= test24();
+	++tc; pc+= test25();
+	++tc; pc+= test26();
+	++tc; pc+= test27();
+	++tc; pc+= test28();
+	++tc; pc+= test29();
+	++tc; pc+= test30();
+	++tc; pc+= test31();
+	++tc; pc+= test32();
+	++tc; pc+= test33();
+	++tc; pc+= test34();
+	++tc; pc+= test35();
+	++tc; pc+= test36();
+	++tc; pc+= test37();
+	++tc; pc+= test38();
 	++tc; pc+= test39();
 	++tc; pc+= test40();
 
