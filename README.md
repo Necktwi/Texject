@@ -34,15 +34,23 @@ I recursively hacked it to extract as many features as I could and I will contin
 
 int main () {
 	Txj_ comp("file://tests/data/simple.json");
-	Txj_& Emp1= comp["employees"][0];
+	Txj_& employees= comp["employees"];
+	Txj_& Emp1= employees[0];
 	cout<< "Employee 1: "<< Emp1["firstName"]<< " "<< Emp1["lastName"]<< endl;
 	
 	//1st argument should be given 'true' for JSON string else it gives Texject
-	string Emp2= comp["employees"][1].stringify(true);
+	string Emp2= employees[1].stringify(true);
 	cout<< "Employee 2: "<< Emp2<< endl;
 
-   string Emp3= comp["employees"][2].prettyString(true);
+	string Emp3= employees[2].prettyString(true);
 	cout<< "Employee 3: "<< Emp3<< endl;
+	
+	if ((int)comp["employeeCount"]==3) {
+		employees[employees.size].init(
+			"{firstName: \"Gowtham\", lastName: \"Kudupdui\"}");
+		comp["employeeCount"]= employees.size;
+	}
+	comp.save();
 	return 0;
 }
 ```
@@ -58,7 +66,7 @@ Employee 3: {
 
 ## The Texject:
 - Employee.oob.txj; oob: OrderedOBject; the order of members preserved
-```JSON
+```txj
 name: "Gowtham",
 "id": 1729,
 isProgrammer: true,
@@ -105,7 +113,6 @@ emp["testScore"][1]["C++"]= ++langScore;
 emp.save(); // saves to the file
 emp["sports"][]= "tt"; //its already in set, so no effect! 
 cout<< "Sports he play: "<< emp["sports"]<< endl;
-cout<<
 ```
 - Output on 1st run:
 ```

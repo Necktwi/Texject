@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <math.h>
 #include <ios>
 #include "Texject.h"
@@ -172,13 +173,13 @@ void test1 () {
    ffo2["birds"][2].setQType(Txj_::QUERY_TYPE::SET);
    ffo2["birds"][3].setQType(Txj_::QUERY_TYPE::QUERY);
    string query = ffo2.queryString();
-   ffo2["amphibians"]["genome"] = "<xml>gnomechanged :p</xml>";
-   ffo2["birds"][2] = "kiwi";
+   ffo2["amphibians"]["genome"]= "<xml>gnomechanged :p</xml>";
+   ffo2["birds"][2]= "kiwi";
    cout << ffo2.prettyString() << endl;
    cout << query << endl;
    Txj_ qo(query);
    query = qo.queryString();
-   cout << query << endl;
+   cout<< query<< endl;
    
    if (ffo2["amphibians"]["frogs"].isEFlagSet(Txj_::E_FLAGS::EXTENDED)) {
       cout << "already extended" << endl;
@@ -957,13 +958,226 @@ int test37 () {
 	}
 }
 
+int test38 () {
+	cout<< "## 15. comments test"<< endl;
+	ccp istr= "file://tests/data/comment.oob.txj";
+	ftsStart.update();
+	Txj_ t(istr);
+	string prettyTxj= t.prettyString();
+	cout<< "prettyTxj: "<< prettyTxj<< endl;
+	t.save();
+	cout<< "istr+7: "<< istr+7<< endl;
+	ifstream ifs(istr+7, ios::in);
+	string fStr;
+	if (ifs.is_open()) {
+		fStr.append((istreambuf_iterator<char>(ifs)),
+						  istreambuf_iterator<char>());
+		ifs.close();
+		cout<< "fStr: "<< endl<< fStr<< endl;
+	}
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: '#comment' should not exist in prettyTxj but should exist in fStr"<< endl;
+	if (!strstr(prettyTxj.c_str(), "#comment") &&
+		 strstr(fStr.c_str(), "#comment")) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test39 () {
+	cout<< "## 16. timestamp test"<< endl;
+	ftsStart.update();
+	ccp istr= "file://tests/data/empty.obj.txj";
+	Txj_ t(istr);
+	t.freeObj();
+	auto now= chrono::system_clock::now();
+	t["qC2VvW3jIYeMVg30"]["ts"]= now;
+	string prettyTxj= t.prettyString(false, true);
+	cout<< "prettyTxj: "<< prettyTxj<< endl;
+	now= chrono::system_clock::now();
+	t["qC2VvW3jIYeMVg30"]["ts"]= now;
+	prettyTxj= t.prettyString(false, true);
+	cout<< "prettyTxj: "<< prettyTxj<< endl;
+	t.save();
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: prettyTxj has (8)"<< endl;
+	if (strstr(prettyTxj.c_str(), "(8)")) {
+		cout<< "PASSED"<< endl<< endl;
+		return 1;
+	} else {
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+}
+
+int test40 () {
+	cout<< "## 17. malformed Texject crash test"<< endl;
+	ftsStart.update();
+	const char* cases[]= {
+		"",
+		"   \n\t  ",
+		"\n",
+		"1",
+		"null",
+		"nul",
+		"true",
+		"tru",
+		"false",
+		"!",
+		"?",
+		"^",
+		"delete",
+		"del",
+		"1 2",
+		"a: 1",
+		"a: 1,",
+		"a: 1,,",
+		"{}",
+		"[]",
+		"{} extra",
+		"}",
+		"]",
+		",",
+		"#",
+		"#comment",
+		"#comment\na: 1",
+		"{a: 1}",
+		"{a: 1,}",
+		"{,}",
+		"{,a: 1}",
+		"{a: 1,,b: 2}",
+		"{a: 1,,}",
+		"{a: 1, b: 2,,}",
+		"{a: 1,, b: 2}",
+		"{a: , b: 2}",
+		"{a: }",
+		"{a: ,}",
+		"[,]",
+		"[,1]",
+		"[1,]",
+		"[1,,2]",
+		"[1,,]",
+		"[, ,]",
+		"{a: 1",
+		"[1",
+		"{a: {b: 1",
+		"{a: [1, 2",
+		"{a: 1} }",
+		"[1] ]",
+		"{a: 1}\n{b: 2}",
+		"{a: 1} garbage",
+		"{a: ()}",
+		"{a: (0)xyz}",
+		"{a: (3)xy}",
+		"{a: (3)xy, b: 2}",
+		"{a: (9999)xy}",
+		"{a: (9999)xy, b: 2}",
+		"{a: (3)",
+		"{a: (3",
+		"{a: (-1)}",
+		"{a: (1)5, b: (1)x}",
+		"(3)abc",
+		"{a: \"unterminated}",
+		"{a: \"unterminated",
+		"{a: \"x\"}",
+		"{a: \"multi\nline\", b: 2}",
+		"{a: \"x\" \"y\"}",
+		"{a: \"x\" \"y\", b: 2}",
+		"{a: \"\"}",
+		"{a: 1.2.3}",
+		"{a: 1.2, b: 3}",
+		"{a: .5}",
+		"{a: 5.}",
+		"{a: 1e10}",
+		"{a: 0x10}",
+		"{a: -}",
+		"{a: +}",
+		"{a: --1}",
+		"{a: 20260101120000123456}",
+		"{a: 2026010112000012345}",
+		"{a: 202601011200001234567}",
+		"{#c, a: 1}",
+		"{a: 1, #c}",
+		"{a: 1, #c, b: 2}",
+		"{#}",
+		"{a: 1, #}",
+		"{\n#comment\na: 1\n}",
+		"{a: 1, #comment line\n, b: 2}",
+		"{a: [1, 2,]}",
+		"{a: [1, 2,]",
+		"{{}}",
+		"[[]]",
+		"{a: {}}",
+		"{a: []}",
+		"{}{}",
+		"[{} {}]",
+		"{a: 1, b: {c: 2,}} extra",
+		"{\"a\": 1}",
+		"{a: 1, \"a\": 2}",
+		"{1: 2}",
+		"{1.5: 2}",
+		"{-1: 2}",
+		"{+1: 2}",
+		"{a: (Time)}",
+		"{a: 1, b: 2} #trailing",
+		"{a: .b}",
+		"{a: .b, b: 1}",
+	};
+	int n= (int)(sizeof(cases)/sizeof(cases[0]));
+	int crashes= 0;
+	for (int c= 0; c<n; ++c) {
+		cout<< "case "<< c<< ": ["<< cases[c]<< "]"<< endl;
+		pid_t pid= fork();
+		if (pid==0) {
+			Txj_ t;
+			t.init(cases[c]);
+			cout<< "  init ok"<< endl;
+			string s;
+			t.prettyString(s, false, true);
+			cout<< "  prettyString ok"<< endl;
+			Txj_ r;
+			r.init(s);
+			cout<< "  re-init ok"<< endl;
+			_exit(0);
+		}
+		int st= 0;
+		waitpid(pid, &st, 0);
+		if (!WIFEXITED(st) || WEXITSTATUS(st)!=0) {
+			++crashes;
+			cout<< "  *** CRASHED *** status=0x"<< hex<< st<< dec<< endl;
+		}
+	}
+	ftsEnd.update();
+	ftsDiff= ftsEnd-ftsStart;
+	cout<< "%TEST_FINISHED% in "<< ftsDiff<< "sec"<< endl;
+	printMemUsage();
+	cout<< "Testing: "<< n<<
+		 " malformed Texjects init/prettyString/re-init without crash"<< endl;
+	if (crashes) {
+		cout<< "crashes: "<< crashes<< endl;
+		cout<< "FAILED"<< endl<< endl;
+		return 0;
+	}
+	cout<< "PASSED"<< endl<< endl;
+	return 1;
+}
+
 int main (int argc, char** argv) {
-   cout<< "%SUITE_STARTING% TestTxj"<< endl;
-   cout<< "%SUITE_STARTED%"<< endl;
-   
-   FerryTimeStamp ftsSuiteStart;
-   FerryTimeStamp ftsSuiteEnd;
-   ftsSuiteStart.update();
+	cout<< "%SUITE_STARTING% TestTxj"<< endl;
+	cout<< "%SUITE_STARTED%"<< endl;
+
+	FerryTimeStamp ftsSuiteStart;
+	FerryTimeStamp ftsSuiteEnd;
+	ftsSuiteStart.update();
 
 /*
    cout << "%TEST_STARTED% test1 (TestTxj)" << endl;
@@ -1125,12 +1339,15 @@ int main (int argc, char** argv) {
 	// ++tc; pc+= test29();
 	// ++tc; pc+= test30();
 	// ++tc; pc+= test31();
-	++tc; pc+= test32();
+	// ++tc; pc+= test32();
 	// ++tc; pc+= test33();
 	// ++tc; pc+= test34();
 	// ++tc; pc+= test35();
 	// ++tc; pc+= test36();
 	// ++tc; pc+= test37();
+	// ++tc; pc+= test38();
+	++tc; pc+= test39();
+	++tc; pc+= test40();
 
 	ftsSuiteEnd.update();
    ftsDiff= ftsSuiteEnd-ftsSuiteStart;

@@ -507,7 +507,8 @@ void Txj_::init (
 					  SeqIns:
 						if (objId[0]=='#') {
 							comment= true;
-						} else if (
+						}
+						if (
 							objId[0]=='(' && objId[1]=='T' && objId[2]=='i' &&
 							objId[3]=='m' && objId[4]=='e' && objId[5]==')'
 						) {
@@ -521,10 +522,10 @@ void Txj_::init (
 							pOverLooker->insertFeaturedMember(
 								fm, FM_UPDATE_TIMESTAMP);
 						} else {
+							ffpo.m_pvpsMapSequence->push_back(prNew);
 							if (comment) {
 								comment= false;
 							} else {
-								ffpo.m_pvpsMapSequence->push_back(prNew);
 								++size;
 							}
 						}
@@ -579,6 +580,10 @@ void Txj_::init (
 				} else if (txji=='{') {
 					if (isType(OBJ)) {
 					  ObjIns:
+						if (&objId==&arrInd) {
+							flErr(TXJ_MAIN, "Error parsing Txj_ at %d\n", i);
+							return;
+						}
 						prNew= val.pairs->find(objId);
 						prNew->second= obj;
 						if (isType(ORDERED_OBJ)) {
@@ -2466,10 +2471,18 @@ void Txj_::stringify (
 }
 
 string Txj_::prettyString (
-	bool json, bool printComments, int indent, TxjPrettyPrintPObj* pObj,
-	bool printFilePath, bool save
+	bool json, bool printComments, int indent,
+	TxjPrettyPrintPObj* pObj, bool printFilePath, bool save
 ) const {
-	string ps; char opnBrc, clsBrc;
+	string ps;
+	prettyString(ps, json, printComments, indent, pObj, printFilePath, save);
+	return ps;
+}
+void Txj_::prettyString (
+	string& ps, bool json, bool printComments, int indent,
+	TxjPrettyPrintPObj* pObj, bool printFilePath, bool save
+) const {
+	char opnBrc, clsBrc;
 	if (isEFlagSet((E_FLAGS)(FILE|CASTFILE)) && pObj && printFilePath) {
 		ccp filename= getFeaturedMember(FM_FILE).m_sFileName;
 		if (save)
@@ -2480,7 +2493,8 @@ string Txj_::prettyString (
 		}
 		if (ri>0)
 			ri+= 2;
-		return string("file://")+(filename+ri);
+		ps+= string("file://")+(filename+ri);
+		return;
 	}
 	if (!printFilePath && save) {
 		printFilePath= true;
@@ -2490,7 +2504,7 @@ string Txj_::prettyString (
 	}
 	switch (getType()) {
 	case STRING: {
-		ps= "\"";
+		ps+= '\"';
 		char* pcNewLnCharPos= strchr(val.str, '\n');
 		bool hasNewLine= (pcNewLnCharPos!=NULL);
 		if (pObj && pObj->m_bGiveFirstLine) {
@@ -2546,9 +2560,11 @@ string Txj_::prettyString (
 		if (isEFlagSet(PRECISION)) {
 			int precision= getFeaturedMember(FM_PRECISION).precision;
 			string num(toPreciseStr(val.number, precision));
-			return num;
+			ps+= num;
+			return;
 		} else {
-			return toPreciseStr(val.number, 0);
+			ps+= toPreciseStr(val.number, 0);
+			return;
 		}
 		break;
 	}
@@ -2559,27 +2575,31 @@ string Txj_::prettyString (
 				(const unsigned char*)val.str, size, (size_t*)&output_length);
 			string b64_str(b64_char, output_length);
 			free(b64_char);
-			return ("\""+b64_str+"\"");
+			ps+= "\""+b64_str+"\"";
+			return;
 		} else {
-			return ("<xml length= \""+to_string(size)+"\" >" +
-					  string(val.str, size)+"</xml>");
+			ps+= "<xml length= \""+to_string(size)+"\" >" +
+				string(val.str, size)+"</xml>";
+			return;
 		}
 		break;
 	}
-	case BOOL: {
-		if (val.boolean) {
-			return ("true");
+	case BOOL: if (val.boolean) {
+			ps+= "true";
+			return;
 		} else {
-			return ("false");
+			ps+= "false";
+			return;
 		}
 		break;
-	}
-	case ORDERED_OBJ: opnBrc= '['; clsBrc= ']'; goto setPPBrace;
+	case ORDERED_OBJ: opnBrc= json?'{':'['; clsBrc= json?'}':']';
+		goto setPPBrace;
 	case OBJ: {
 		opnBrc= '{'; clsBrc= '}';
 	  setPPBrace:
 		if (size==0) {
-			return (save && isEFlagSet(CASTFILE))? "":string(1, opnBrc)+clsBrc;
+			ps+= (save && isEFlagSet(CASTFILE))? "":string(1, opnBrc)+clsBrc;
+			return;
 		}
 		ffmap& objmap= *val.pairs;
 		ffmap::iterator i;
@@ -2600,21 +2620,25 @@ string Txj_::prettyString (
 				iLastNwLnIndex= 1;
 			} else {
 				flErr(TXJ_MAIN, "An object never extends via parent!");
-				return "";
+				return;
 			}
 		} else if (isEFlagSet(HAS_CHILDREN)) {
 
 		} else {
 		}
-		ps= (save && isEFlagSet(CASTFILE))? "" : string(1, opnBrc);
+		ps+= (save && isEFlagSet(CASTFILE))? "" : string(1, opnBrc);
 		if (!(save && isEFlagSet(CASTFILE)))
-			ps+= "\n";
+			ps+= '\n';
 		while (1) {
 			uint32_t t= (i->second || i->second->isType(LINK)) ?
 				i->second->getType() : NUL;
-			if (t==UNDEFINED && (!printComments && i->first[0]=='#')) {
+			bool isComment= i->first[0]=='#';
+			bool printComment= (printComments) && isComment;
+			if (t==UNDEFINED || (isComment && !printComment)) {
 				goto prtyPrntIter;
 			}
+			if (printComment && ps[ps.size()-2]!='\n')
+				ps+= '\n';
 			if (isEFlagSet(B64ENCODE))i->second->setEFlag(B64ENCODE);
 			if ((isEFlagSet(B64ENCODE_CHILDREN))&&!isEFlagSet(B64ENCODE_STOP))
 				i->second->setEFlag(B64ENCODE_CHILDREN);
@@ -2624,24 +2648,30 @@ string Txj_::prettyString (
 			lfpo.name= &i->first;
 			if (json) ps+= "\"";
 			ps+= ": ";
-			ps.append(
-				i->second->prettyString(
-					json, printComments, indent +1, &lfpo, printFilePath, save));
+			i->second->prettyString(
+				ps, json, printComments, indent+1, &lfpo, printFilePath, save);
 		  prtyPrntIter:
 			iterSeq(itVecPtr, i, iMapSeqIndexer, objmap);
 			if (i==objmap.end()) {
-				ps+= '\n';
+				if (t==UNDEFINED) {
+					ps.pop_back();
+					ps.back()= '\n';
+				} else {
+					ps+= '\n';
+				}
 				if (!(save && isEFlagSet(CASTFILE))){
 					ps.append(indent>0?indent:0, '\t');
 					ps+= clsBrc;
 				}
 				break;
-			} else {
-				ps.append(",\n");
-				if (hasComment && !json && printComments) {
-					ps+= '\n'; hasComment= false;
+			} else if (t!= UNDEFINED) {
+				if (!isComment || printComment)
+					ps.append(",\n");
+				if (hasComment && (save || printComments)) {
+					ps+= '\n';
+					hasComment= false;
 				}
-				if (i->first[0]=='#') hasComment= true;
+				if (isComment) hasComment= true;
 			}
 		};
 		break;
@@ -2651,11 +2681,11 @@ string Txj_::prettyString (
 		TxjPrettyPrintPObj lfpo;
 		lfpo.pObj= pObj;
 		lfpo.value= const_cast<Txj_*> (this);
-		ps= (save && isEFlagSet(CASTFILE))? "" : "{";
+		ps+= (save && isEFlagSet(CASTFILE))? "" : "{";
 		if(objset.size()) {
 			for (Txj_* fp : objset) {
-				ps+= fp->prettyString(json, printComments, indent+1, &lfpo,
-											  printFilePath, save);
+				fp->prettyString(ps, json, printComments, indent+1, &lfpo,
+									  printFilePath, save);
 				ps+= ',';
 			}
 			ps.pop_back();
@@ -2675,7 +2705,7 @@ string Txj_::prettyString (
 		lfpo.m_msviClWidths= &msviClWidths;
 		int iParentHeight= 0;
 		if (!size) {
-			ps= "[]"; break;
+			ps+= "[]"; break;
 		}
 		// if (isEFlagSet(EXT_VIA_PARENT)) {
 		// 	if (isEFlagSet(EXTENDED)) {
@@ -2782,7 +2812,7 @@ string Txj_::prettyString (
 		// 	lfpo.m_bGiveFirstLine= true;
 		// 	ps.append((((vClWidths[0]+7)/8)*8-pObj->name->length()+7)/8, '\t');
 		// } else {
-			ps= (save && isEFlagSet(CASTFILE))?"":"[\n";
+			ps+= (save && isEFlagSet(CASTFILE))?"":"[\n";
 		// }
 		int i= 0;
 		bool bInCompleteStrs= false;
@@ -2790,7 +2820,6 @@ string Txj_::prettyString (
 		if (!(save && isEFlagSet(CASTFILE)))ps.append(indent+1, '\t');
 		while (i<objarr.size()) {
 			uint32_t t= objarr[i] ? objarr[i]->getType() : NUL;
-			string sMem;
 			if (t!=UNDEFINED && t!=NUL) {
 				if (isEFlagSet(B64ENCODE))objarr[i]->setEFlag(B64ENCODE);
 				if ((isEFlagSet(B64ENCODE_CHILDREN))&&
@@ -2801,15 +2830,13 @@ string Txj_::prettyString (
 				if (objarr[i]->isType(STRING) &&
 					 (isEFlagSet(HAS_CHILDREN) ||
 					  isEFlagSet(EXT_VIA_PARENT))) {
-
 				}
-				sMem= objarr[i]->prettyString(
-					json, printComments, indent+1,&lfpo,printFilePath,save);
-				ps.append(sMem);
+				objarr[i]->prettyString(
+					ps, json, printComments, indent+1, &lfpo, printFilePath, save);
 			} else if (t==NUL) {
 				//ps.append(indent+1, '\t');
 			}
-			int width= sMem.length();
+			//int width= sMem.length();
 			// if ((isEFlagSet(EXT_VIA_PARENT) && !isEFlagSet(EXTENDED)) ||
 			// 	 isEFlagSet(HAS_CHILDREN)
 			// ) {
@@ -2860,16 +2887,17 @@ string Txj_::prettyString (
 		vector<string>* vtProp= getFeaturedMember(FM_LINK).link;
 		if (save || returnNameIfDeclared(*vtProp, pObj)!=NULL) {
 			string ln= implode(".", *vtProp);
-			return json?"\""+ln+"\"":ln;
+			ps+=  json?"\""+ln+"\"":ln;
+			return;
 		} else {
 			return val.fptr->prettyString(
-				json, printComments, indent, pObj, printFilePath, save);
+				ps, json, printComments, indent, pObj, printFilePath, save);
 		}
 		break;
 	}
 	case DLINK: {
 		return val.fptr->prettyString(
-			json, printComments, indent+1, pObj, printFilePath, save);
+			ps, json, printComments, indent+1, pObj, printFilePath, save);
 	}
 	case BINARY: {
 		ps+= "("+to_string(size)+")";
@@ -2877,13 +2905,16 @@ string Txj_::prettyString (
 		break;
 	}
 	case TIME:
-		return (string) (*val.m_pFerryTimeStamp);
+		ps+= (string)(*val.m_pFerryTimeStamp);
+		return;
 	default:
 		if (!isQType(NONE)) {
 			if (isQType(QUERY)) {
-				return "?";
+				ps+= '?';
+				return;
 			} else if (isQType(DEL)) {
-				return "delete";
+				ps+= "delete";
+				return;
 			}
 		} else {
 			ps+= json?"null":"";
@@ -2892,9 +2923,8 @@ string Txj_::prettyString (
 	if (isEFlagSet(EXTENDED) && !isType(STRING)) {
 		Txj_* pParent= getFeaturedMember(FM_PARENT).m_pParent;
 		ps+= " | ";
-		ps+= pParent->stringify(false, false, pObj);
+		pParent->stringify(ps, false, false, pObj);
 	}
-	return ps;
 }
 
 string Txj_::ConstructMultiLineStringArray (
@@ -3035,6 +3065,7 @@ Txj_& Txj_::operator= (Blob_ b) {
 // 	return (*this)= (ccp)s;
 // }
 Txj_& Txj_::operator = (const char* s) {
+	lock();
 	if (isQType(UPDATE)) {
 		FeaturedMember fm= getFeaturedMember(FM_UPDATE_TIMESTAMP);
 		fm.m_pTimeStamp->update();
@@ -3130,9 +3161,11 @@ Txj_& Txj_::operator = (const char* s) {
 			++parent->size;
 		else {
 			delete this;
+			unlock();
 			return nullTxj;
 		}
 	}
+	unlock();
 	return *this;
 }
 
@@ -3142,6 +3175,7 @@ Txj_& Txj_::operator = (const string& s) {
 }
 
 Txj_& Txj_::operator = (const int& i) {
+	lock();
 	if(isQType(UPDATE)){
 		FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
 		fm.m_pTimeStamp->update();
@@ -3158,13 +3192,16 @@ Txj_& Txj_::operator = (const int& i) {
 			++parent->size;
 		else {
 			delete this;
+			unlock();
 			return nullTxj;
 		}
 	}
+	unlock();
 	return *this;
 }
 
 Txj_& Txj_::operator = (const Txj_& f) {
+	lock();
 	if(isQType(UPDATE)){
 		FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
 		fm.m_pTimeStamp->update();
@@ -3176,12 +3213,14 @@ Txj_& Txj_::operator = (const Txj_& f) {
 	if (f.isType(UNDEFINED)) {
 		freeObj();
 		setType(UNDEFINED);
+		unlock();
 		return *this;
 	}
 	if (!((isType(OBJ) || isType(ORDERED_OBJ)) &&
 			(f.isType(OBJ) || f.isType(ORDERED_OBJ))))
 		freeObj(true);
 	copy(f, COPY_ALL);
+	unlock();
 	return *this;
 }
 
@@ -3194,9 +3233,11 @@ Txj_& Txj_::operator= (Txj_* f) {
 		FeaturedMember fm= getFeaturedMember(FM_UPDATE_TIMESTAMP);
 		fm.m_pTimeStamp->update();
 	}
+	lock();
 	freeObj(true);
 	setType(DLINK);
 	val.fptr= f;
+	unlock();
 	return *this;
 }
 
@@ -4200,8 +4241,14 @@ void Txj_::Iterator::init (const Txj_& orig, bool end) {
 		FeaturedMember fm= orig.getFeaturedMember(FM_MAP_SEQUENCE);
 		type= OBJ;
 		if (fm.m_pvpsMapSequence!=NULL) {
-			ui.pai= end? fm.m_pvpsMapSequence->end() :
-				fm.m_pvpsMapSequence->begin();
+			if (end) {
+				ui.pai= fm.m_pvpsMapSequence->end();
+			} else {
+			  	ui.pai= fm.m_pvpsMapSequence->begin();
+				while (ui.pai!=fm.m_pvpsMapSequence->end() &&
+						 (*ui.pai)->first[0]=='#')
+					++ui.pai; 
+			}
 			type= ORDERED_OBJ;
 			m_uContainerPs.m_pMapVector= fm.m_pvpsMapSequence;
 		} else {
@@ -4602,8 +4649,11 @@ int Txj_::save (
 	bool json, bool printComments, unsigned int indent,
 	TxjPrettyPrintPObj* pObj, bool printFilePath, bool save
 ) const {
-	string sOut= json?stringify(json):
-		prettyString(json, printComments, 0, pObj, false, save);
+	string sOut;
+	if (json)
+		stringify(sOut, json);
+	else
+		prettyString(sOut, json, printComments, 0, pObj, false, save);
 	if (isEFlagSet((E_FLAGS)(FILE|CASTFILE))) {
 		const char* fn= getFeaturedMember(FM_FILE).m_sFileName;
 		ofstream ofs(fn, ios::out|ios::trunc);

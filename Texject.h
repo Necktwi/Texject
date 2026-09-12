@@ -518,6 +518,11 @@ public:
 		int indent= 0, TxjPrettyPrintPObj* pObj= NULL,
 		bool printFilePath= false, bool save= false
 	) const;
+	void prettyString (
+		string& ps, bool json= false, bool printComments= false,
+		int indent= 0, TxjPrettyPrintPObj* pObj= NULL,
+		bool printFilePath= false, bool save= false
+	) const;
 	/**
 	 * Generates a query string which can be used to query a Txj_ tree. Query
 	 * string is constructed based on SET, QUERY and DELETE marks on the Txj_
@@ -580,12 +585,18 @@ public:
 	 */
 	template <typename T>
 	Txj_& operator= (const T& t) {
+		lock();
+		if(isQType(UPDATE)){
+			FeaturedMember fm=getFeaturedMember(FM_UPDATE_TIMESTAMP);
+			fm.m_pTimeStamp->update();
+		}
 		freeObj ();
 		flDbg(TXJ_MAIN, "size:%d", sizeof(T));
 		size= sizeof (T);
 		val.vptr= (uint8_t*)malloc(size);
 		(T&)(*val.vptr)= t;
 		setType (BINARY);
+		unlock();
 		return *this;
 	}
 	Txj_& operator = (const char* s);

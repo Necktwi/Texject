@@ -1,18 +1,34 @@
 name: "Gowtham",
-id: 1729,
+"id": 1729,
 isProgrammer: true,
 favLang: [
 	"C++", "Javascript", "lisp"
 ],
-its oob enclosed in [] where as obj(object) is enclosed in {}: [
-	town: "KAKINADA",
+
+#comment1: "It's a table",
+testScore: [[
+	    8,            7,      6
+], [
+	    7,            8,      3
+], [
+	    9,            5,      8
+]] | [favLang],
+
+#comment2: "oob(OrderedOBject); enclosed in []",
+"address": [
+	"town": "KAKINADA",
 	country: "Bharath"
 ],
-biography: "
+"biography": "
 	He is smart, brilliant, genius, empathetic, creative, connective, patient,
 	handsome, valient, romantic;) After all he made JSON with multi line string!
 ",
-its an obj; enclosed in {}; order not preserved: {
-	height: "6 foot",
-	iris: "blue"
-}
+
+#comment3: "its an obj; enclosed in {}; order not preserved",
+physiology: {
+	iris: "blue",
+	height: "6 foot"
+},
+
+#comment2: "its a set! And comments are not stringified",
+sports: {"cricket", "badminton", "tt"}
