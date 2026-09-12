@@ -1,18 +1,29 @@
 # Texject
-Fast C++ JSON parser; serves more than just JSON, with subscript operator in
-C++. Texject mean text object. These are stored in files with extension 
-`.txj`, `.obj.txj`, `.arr.txj`, `.set.txj`, `.oob.txj`, `.num.txj`, `.str.txj`
-etc.
-
-- Its fast, lite and thread safe!
+Fast C++ JSON parser; with subscript operator in C++, it serves more than just
+JSON. `Texject` is coined from text object. Texjects are JSON like data files
+with extensions `.txj`, `.obj.txj`, `.arr.txj`, `.set.txj`, `.oob.txj`, 
+`.num.txj`, `.str.txj` etc.
+- `example.txj`
+```
+{
+	firstName: "John",
+	lastName: "Doe"
+}
+```
+- this can also be written into the file `example.obj.txj` as:
+```
+firstName: "John",
+lastName: "Doe"
+```
 - supported containers:
   - obj: Object, order of key value pairs not preserver, enclosure: `[]`
   - oob: OrderedOBject, order of pairs is preserverd, enclosure: `{}`
   - arr: Array, simple array of Texjects, enclosure: `[]`
-  - set: Set, duplicate members is discarded, enclosure: `{}`
+  - set: Set, duplicate members are discarded, enclosure: `{}`
 - Baic types: numbers, strings, boolean, binaray, xml, time stamps.
 - When serialized to JSON, maximum features are put into JSON and remaining
   that can not be JSONed are cleanly discarded.
+- Its fast, lite and thread safe!
 
 I recursively hacked it to extract as many features as I could and I will continue till it can!
 
@@ -65,13 +76,13 @@ Employee 3: {
 ```
 
 ## The Texject:
-- Employee.oob.txj; oob: OrderedOBject; the order of members preserved
+- `Employee.oob.txj`; oob: OrderedOBject; the order of members preserved
 ```txj
 name: "Gowtham",
 "id": 1729,
 isProgrammer: true,
 
-#comment1: "It's a table; '|' inheritance operator",
+#comment1: "It's a table; '|' is inheritance operator",
 favLang: [
 	"C++", "Javascript", "lisp"
 ],
@@ -83,7 +94,7 @@ testScore: [[
 	    9,            5,      8
 ]] | [favLang],
 
-#comment2: "its oob enclosed in [] where as obj(object) is enclosed in {}"
+#comment2: "its an oob enclosed in [] where as obj(object) is enclosed in {}"
 "address": [
 	"town": "KAKINADA",
 	country: "Bharath"

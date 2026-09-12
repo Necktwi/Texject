@@ -1135,7 +1135,7 @@ int test40 () {
 	int n= (int)(sizeof(cases)/sizeof(cases[0]));
 	int crashes= 0;
 	for (int c= 0; c<n; ++c) {
-		cout<< "case "<< c<< ": ["<< cases[c]<< "]"<< endl;
+		cout<< "case "<< c<< ": `"<< cases[c]<< "`"<< endl;
 		pid_t pid= fork();
 		if (pid==0) {
 			Txj_ t;

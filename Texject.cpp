@@ -967,6 +967,10 @@ void Txj_::init (
 			break;
 		}
 		case '!': {
+			if (!pObj || !pObj->value) {
+				flErr(TXJ_MAIN, "Error parsing Txj_ at %d\n", i);
+				return;
+			}
 			setType(NUL);
 			pObj->value->setQType(NQUERY);
 			goto backyard;
